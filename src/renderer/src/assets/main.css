@@ -501,6 +501,19 @@ button {
   line-height: var(--reader-line-height);
 }
 
+/* Oversized unbreakable blocks (code, math, images) cannot split across the paginator's
+   fixed-height columns, so at large font sizes they used to be clipped with no way to scroll.
+   Cap them to the measured column height (--col-h, set in Reader.recompute) and let them scroll
+   internally so the content is always reachable without changing settings. */
+.reader-content pre,
+.reader-content .katex-display {
+  max-height: var(--col-h, none);
+  overflow: auto;
+}
+.reader-content img {
+  max-height: min(72vh, var(--col-h, 72vh));
+}
+
 /* Reading typography knobs (apply to rendered markdown). */
 .markdown-body {
   font-weight: var(--reader-weight, 400);

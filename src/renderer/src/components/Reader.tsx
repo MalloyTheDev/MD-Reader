@@ -201,6 +201,13 @@ export function Reader(props: ReaderProps): React.JSX.Element {
       const colStep = colWidth + gap
       stepRef.current = colStep
 
+      // Cap oversized unbreakable blocks (code, math, images) to the usable column height so
+      // they scroll internally instead of being clipped when the font is large / page is small.
+      const padT = parseFloat(cs.paddingTop) || 0
+      const padB = parseFloat(cs.paddingBottom) || 0
+      const colH = vp.clientHeight - padT - padB
+      ct.style.setProperty('--col-h', colH > 40 ? colH + 'px' : 'none')
+
       const totalCols = Math.max(1, Math.round((ct.scrollWidth + gap) / colStep))
       const total = Math.max(1, Math.ceil(totalCols / cpp))
       pageCountRef.current = total
