@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  parseDelimited,
-  csvToMarkdownTable,
-  markdownTableToCsv,
-  extractTableBlock
-} from './table'
+import { parseDelimited, csvToMarkdownTable, markdownTableToCsv, extractTableBlock } from './table'
 
 describe('csv ↔ markdown table', () => {
   it('converts simple CSV to a Markdown table with a header + separator', () => {

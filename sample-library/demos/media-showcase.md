@@ -19,7 +19,7 @@ Drop or paste an image into the **editor** and it's saved into an `assets/` fold
 
 ## Inline example
 
-![sample|160](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgcng9IjEwIiBmaWxsPSIjNGE5MGQ5Ii8+PHRleHQgeD0iMTAwIiB5PSI2OCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjIiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNhbXBsZTwvdGV4dD48L3N2Zz4= "Figure 1 — an inline sample image")
+![sample|160](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgcng9IjEwIiBmaWxsPSIjNGE5MGQ5Ii8+PHRleHQgeD0iMTAwIiB5PSI2OCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjIiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNhbXBsZTwvdGV4dD48L3N2Zz4= 'Figure 1 — an inline sample image')
 
 ## Missing images degrade gracefully
 

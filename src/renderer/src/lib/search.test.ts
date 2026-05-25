@@ -24,11 +24,7 @@ const files = [
     'mitosis.md',
     '---\ntags:\n  - biology\n  - cells\n---\n# Mitosis\n\nCell division produces two identical daughter cells.\n\n- [ ] review later'
   ),
-  doc(
-    '/notes/charts.md',
-    'charts.md',
-    '# Charts\n\n```chart\ntype: bar\ny: [1,2,3]\n```'
-  )
+  doc('/notes/charts.md', 'charts.md', '# Charts\n\n```chart\ntype: bar\ny: [1,2,3]\n```')
 ]
 
 describe('library search', () => {
@@ -121,9 +117,7 @@ describe('search query operators', () => {
   })
 
   it('parses indented front-matter tags', () => {
-    const store = buildIndex([
-      doc('/x.md', 'x.md', '---\n  tags: [alpha, beta]\n---\n# X\n\nbody')
-    ])
+    const store = buildIndex([doc('/x.md', 'x.md', '---\n  tags: [alpha, beta]\n---\n# X\n\nbody')])
     expect(runLibrarySearch(store, 'tag:alpha').map((r) => r.id)).toEqual(['/x.md'])
   })
 })

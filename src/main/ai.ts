@@ -2,6 +2,7 @@ import { ipcMain, safeStorage } from 'electron'
 import Anthropic from '@anthropic-ai/sdk'
 import * as store from './store'
 import type { AiProvider, AiRequest, AiUsage, RepurposeFormat, WriteMode } from '../shared/types'
+import { resolveBaseUrl } from '../shared/ai-endpoints'
 
 const MAX_DOC_CHARS = 600_000
 
@@ -57,15 +58,8 @@ async function getKey(provider: AiProvider): Promise<string | null> {
   }
 }
 
-function baseUrlFor(provider: AiProvider, given?: string): string {
-  const trimmed = (given ?? '').trim().replace(/\/$/, '')
-  // The OpenAI key must only ever be sent to OpenAI's official host: ignore any
-  // renderer-supplied base URL for this provider so the key can't be redirected
-  // to an arbitrary endpoint. Use the "custom" provider for OpenAI-compatible proxies.
-  if (provider === 'openai') return 'https://api.openai.com/v1'
-  if (provider === 'ollama') return trimmed || 'http://localhost:11434/v1'
-  return trimmed // custom: required
-}
+// SSRF pin lives in the shared, unit-tested resolveBaseUrl (src/shared/ai-endpoints.ts).
+const baseUrlFor = resolveBaseUrl
 
 function instructionFor(req: AiRequest): string {
   switch (req.action) {

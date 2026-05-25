@@ -80,10 +80,10 @@ export function computeDocStats(content: string): DocStats {
   const inlineMath = countMatches(noFence, INLINE_MATH)
 
   // The `[`-excluding character classes keep these linear on adversarial `[[[[…` input (ReDoS).
-  const embeds = countMatches(noFence, /!\[\[[^\]\[\n]*\]\]/g)
-  const images = countMatches(noFence, /!\[[^\]\[\n]*\]\([^)\n]*\)/g)
-  const links = countMatches(noFence, /(?<!\!)\[[^\]\[\n]*\]\([^)\n]*\)/g)
-  const wikiLinks = countMatches(noFence, /(?<!\!)\[\[[^\]\[\n]+\]\]/g)
+  const embeds = countMatches(noFence, /!\[\[[^\][\n]*\]\]/g)
+  const images = countMatches(noFence, /!\[[^\][\n]*\]\([^)\n]*\)/g)
+  const links = countMatches(noFence, /(?<!!)\[[^\][\n]*\]\([^)\n]*\)/g)
+  const wikiLinks = countMatches(noFence, /(?<!!)\[\[[^\][\n]+\]\]/g)
 
   return {
     words,
@@ -109,7 +109,7 @@ export function extractWikiNames(content: string): string[] {
   const out: string[] = []
   // Exclude `[` and newline from the name class: wiki names never contain them, and allowing them
   // makes a long `[[[[…` run with no closing `]]` quadratic (ReDoS) on adversarial documents.
-  const re = /(?<!\!)\[\[([^\]\[\n]+)\]\]/g
+  const re = /(?<!!)\[\[([^\][\n]+)\]\]/g
   let m: RegExpExecArray | null
   while ((m = re.exec(content)) !== null) {
     const name = m[1].split('|')[0].split('#')[0].trim()

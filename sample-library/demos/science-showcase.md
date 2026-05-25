@@ -102,8 +102,8 @@ $$
 p^2 + 2pq + q^2 = 1
 $$
 
-| Cross | AA | Aa | aa |
-| --- | --- | --- | --- |
+| Cross   | AA  | Aa  | aa  |
+| ------- | --- | --- | --- |
 | Aa × Aa | 25% | 50% | 25% |
 
 ## Chemistry (mhchem)

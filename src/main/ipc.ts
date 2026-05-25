@@ -6,6 +6,7 @@ import { watch, type FSWatcher } from 'chokidar'
 import { MarkdownFileMeta, MarkdownFileContent, ReadFileResult, FileSidecar } from '../shared/types'
 import * as store from './store'
 import * as sidecar from './sidecar'
+import { isInside, safeSeg } from './safe-path'
 
 const MD_RE = /\.(md|markdown|mdown|mkd|mdx)$/i
 const SKIP_DIRS = new Set(['node_modules', '.git', '.obsidian', '.trash', '.vscode'])
@@ -32,9 +33,7 @@ export function getLibraryRoot(): string | null {
 }
 
 export function isInsideRoot(abs: string): boolean {
-  if (!libraryRoot) return false
-  const rel = relative(libraryRoot, abs)
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+  return isInside(libraryRoot, abs)
 }
 
 function parseFrontmatter(raw: string): {
@@ -186,24 +185,6 @@ async function fileExists(p: string): Promise<boolean> {
   } catch {
     return false
   }
-}
-
-const WIN_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
-
-// Sanitize a user/AI-supplied base file or folder name to a single safe path segment:
-// strips path separators & illegal chars, neutralizes ".." traversal and leading/trailing
-// dots/spaces, and avoids reserved Windows device names. Never returns an empty string.
-function safeSeg(name: string, fallback = 'Untitled'): string {
-  let s = (name || '')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u001f\\/:*?"<>|]/g, '')
-    .replace(/^[. ]+/, '')
-    .replace(/[. ]+$/, '')
-    .replace(/\.{2,}/g, '.')
-    .trim()
-  if (!s) return fallback
-  if (WIN_RESERVED.test(s.split('.')[0])) s = '_' + s
-  return s.slice(0, 120)
 }
 
 const EMBED_RE = /!\[\[([^\]#|\n]+?)(?:#([^\]|\n]+))?\]\]/g

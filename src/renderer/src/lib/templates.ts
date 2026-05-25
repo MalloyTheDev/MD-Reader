@@ -2,7 +2,11 @@
 // code execution. Each template returns a complete document body (front-matter + content) that the
 // renderer writes into the vault via the normal newFile/writeFile flow.
 
-export type TemplateCategory = 'Software' | 'Science & research' | 'Education' | 'Business & writing'
+export type TemplateCategory =
+  | 'Software'
+  | 'Science & research'
+  | 'Education'
+  | 'Business & writing'
 
 export interface TemplateContext {
   /** ISO date (YYYY-MM-DD) used for dated templates. */

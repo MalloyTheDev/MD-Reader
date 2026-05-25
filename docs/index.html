@@ -25,8 +25,7 @@
         margin: 0;
         background: var(--bg);
         color: var(--fg);
-        font-family:
-          -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         line-height: 1.6;
       }
       a {
@@ -39,13 +38,16 @@
       }
       header.hero {
         text-align: center;
-        padding: 72px 20px 40px;
-        background:
-          radial-gradient(900px 380px at 50% -120px, rgba(46, 204, 113, 0.18), transparent);
+        padding: 72px 20px 24px;
+        background: radial-gradient(
+          900px 380px at 50% -120px,
+          rgba(46, 204, 113, 0.18),
+          transparent
+        );
       }
       .hero h1 {
-        font-size: clamp(34px, 6vw, 56px);
-        margin: 0 0 8px;
+        font-size: clamp(34px, 6vw, 58px);
+        margin: 0 0 10px;
         letter-spacing: -0.02em;
       }
       .hero p.tag {
@@ -82,18 +84,83 @@
         font-size: 13px;
         margin-top: 14px;
       }
-      .shot {
-        display: block;
-        width: 100%;
-        height: auto;
+      .note a {
+        text-decoration: underline;
+      }
+
+      /* Auto-crossfading hero slideshow */
+      .slideshow {
+        position: relative;
+        max-width: 960px;
+        margin: 36px auto 0;
+        aspect-ratio: 1108 / 802;
         border: 1px solid var(--border);
-        border-radius: 12px;
-        margin: 28px 0;
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+      }
+      .slideshow img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top center;
+        opacity: 0;
+        animation: fade 24s infinite;
+      }
+      .slideshow img:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .slideshow img:nth-child(2) {
+        animation-delay: 6s;
+      }
+      .slideshow img:nth-child(3) {
+        animation-delay: 12s;
+      }
+      .slideshow img:nth-child(4) {
+        animation-delay: 18s;
+      }
+      @keyframes fade {
+        0% {
+          opacity: 0;
+        }
+        3% {
+          opacity: 1;
+        }
+        22% {
+          opacity: 1;
+        }
+        25% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .slideshow img {
+          animation: none;
+        }
+        .slideshow img:nth-child(1) {
+          opacity: 1;
+        }
+      }
+
+      .band {
+        background: var(--panel);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        margin-top: 56px;
+        padding: 40px 0;
       }
       h2.section {
         font-size: 26px;
         margin: 48px 0 8px;
+      }
+      .lead {
+        color: var(--muted);
+        max-width: 760px;
       }
       .grid {
         display: grid;
@@ -116,6 +183,12 @@
         color: var(--muted);
         font-size: 14px;
       }
+      code {
+        background: rgba(46, 204, 113, 0.12);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 0.9em;
+      }
       .gallery {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -135,6 +208,9 @@
         border-top: 1px solid var(--border);
         margin-top: 56px;
       }
+      footer a {
+        margin: 0 8px;
+      }
     </style>
   </head>
   <body>
@@ -142,8 +218,8 @@
       <div class="wrap">
         <h1>MD Reader</h1>
         <p class="tag">
-          A fast, private, offline-first Markdown reader, library &amp; editor for Windows — built for
-          real technical, scientific, and study work.
+          A fast, private, offline-first Markdown reader, library &amp; editor for Windows — built
+          for real technical, scientific, and study work.
         </p>
         <div class="btns">
           <a class="btn primary" href="https://github.com/MalloyTheDev/MD-Reader/releases/latest"
@@ -151,18 +227,45 @@
           >
           <a class="btn ghost" href="https://github.com/MalloyTheDev/MD-Reader">View on GitHub</a>
         </div>
-        <p class="note">Free &amp; open source (MIT) · signed installer · works fully offline</p>
+        <p class="note">
+          Free &amp; open source (MIT) · works fully offline ·
+          <a href="https://github.com/MalloyTheDev/MD-Reader#windows-install-notes"
+            >installer is unsigned (install notes)</a
+          >
+        </p>
+
+        <div class="slideshow" aria-label="MD Reader screenshots">
+          <img src="screenshots/08-library.png" alt="Library" />
+          <img src="screenshots/10-math.png" alt="Math rendering" />
+          <img src="screenshots/13-charts.png" alt="Charts" />
+          <img src="screenshots/06-editor.png" alt="Editor" />
+        </div>
       </div>
     </header>
 
-    <main class="wrap">
-      <img class="shot" src="screenshots/08-library.png" alt="MD Reader library view" />
+    <section class="band">
+      <div class="wrap">
+        <h2 class="section" style="margin-top: 0">Built for technical Markdown</h2>
+        <p class="lead">
+          Most Markdown apps choke on the hard stuff. MD Reader renders
+          <strong>KaTeX math</strong> (with per-equation copy/expand),
+          <strong>Mermaid diagrams</strong> (zoom · pan · fullscreen · export), safe declarative
+          <strong>charts</strong>, GFM tables, and science/engineering <strong>callouts</strong> —
+          then lets you search it all with operators like <code>has:math</code> and
+          <code>tag:physics</code>, link notes with <code>[[wiki-links]]</code>, and export to
+          HTML/Word with everything rendered.
+        </p>
+      </div>
+    </section>
 
-      <h2 class="section">Everything in your notes, beautifully rendered</h2>
+    <main class="wrap">
+      <h2 class="section">Everything in your notes, in one place</h2>
       <div class="grid">
         <div class="card">
           <h3>📐 Math &amp; science</h3>
-          <p>KaTeX math with per-equation copy/expand, Mermaid diagrams, and safe declarative charts.</p>
+          <p>
+            KaTeX math with per-equation copy/expand, Mermaid diagrams, and safe declarative charts.
+          </p>
         </div>
         <div class="card">
           <h3>📚 A real library</h3>
@@ -170,7 +273,10 @@
         </div>
         <div class="card">
           <h3>🔎 Powerful search</h3>
-          <p>Operators like <code>tag:</code>, <code>has:math</code>, <code>content:</code> with previews.</p>
+          <p>
+            Operators like <code>tag:</code>, <code>has:math</code>, <code>content:</code> with
+            previews.
+          </p>
         </div>
         <div class="card">
           <h3>✍️ Editor &amp; templates</h3>
@@ -178,34 +284,55 @@
         </div>
         <div class="card">
           <h3>🧠 Study tools</h3>
-          <p>Highlights &amp; notes, flashcards with spaced repetition, and a document-info panel.</p>
+          <p>
+            Highlights &amp; notes, flashcards with spaced repetition, and a document-info panel.
+          </p>
         </div>
         <div class="card">
-          <h3>🔒 Private by design</h3>
-          <p>Offline-first, sandboxed file access, blocked remote images, and encrypted AI keys.</p>
+          <h3>📤 Export anywhere</h3>
+          <p>
+            HTML &amp; Word export with math, diagrams, and charts fully rendered — plus print/PDF.
+          </p>
         </div>
       </div>
+    </main>
 
+    <section class="band">
+      <div class="wrap">
+        <h2 class="section" style="margin-top: 0">🔒 Private by default</h2>
+        <p class="lead">
+          MD Reader runs entirely on your machine. File access is sandboxed to the folder you open,
+          remote images are blocked by default, deletes go to the Recycle Bin, and Mermaid/charts
+          render with no code execution. AI features are optional and bring-your-own-key — your key
+          is stored encrypted in the OS keychain and only the request you trigger ever leaves your
+          computer. See the
+          <a href="https://github.com/MalloyTheDev/MD-Reader/blob/main/SECURITY.md"
+            >security model</a
+          >.
+        </p>
+      </div>
+    </section>
+
+    <main class="wrap">
       <h2 class="section">See it in action</h2>
       <div class="gallery">
-        <img src="screenshots/10-math.png" alt="Math rendering" />
-        <img src="screenshots/13-charts.png" alt="Charts" />
         <img src="screenshots/15-tables-callouts.png" alt="Tables and callouts" />
-        <img src="screenshots/06-editor.png" alt="Editor" />
         <img src="screenshots/12-templates.png" alt="Templates" />
         <img src="screenshots/14-doc-info.png" alt="Document info" />
+        <img src="screenshots/16-search-operators.png" alt="Search operators" />
+        <img src="screenshots/05c-settings-screen.png" alt="Settings" />
+        <img src="screenshots/03-slides.png" alt="Slides / present mode" />
       </div>
-
-      <h2 class="section">Optional AI — bring your own key</h2>
-      <p style="color: var(--muted)">
-        Connect Anthropic, OpenAI, or any OpenAI-compatible / Ollama endpoint for a study assistant,
-        repurpose-a-doc, course generation, and README-from-source. Your key is stored encrypted via
-        the OS keychain and never leaves your machine except to call the provider you choose.
-      </p>
     </main>
 
     <footer>
-      MD Reader · MIT-licensed · <a href="https://github.com/MalloyTheDev/MD-Reader">github.com/MalloyTheDev/MD-Reader</a>
+      <div>
+        <a href="https://github.com/MalloyTheDev/MD-Reader/releases/latest">Download</a> ·
+        <a href="https://github.com/MalloyTheDev/MD-Reader">GitHub</a> ·
+        <a href="https://github.com/MalloyTheDev/MD-Reader/blob/main/CHANGELOG.md">Changelog</a> ·
+        <a href="https://github.com/MalloyTheDev/MD-Reader/blob/main/SECURITY.md">Security</a>
+      </div>
+      <div style="margin-top: 10px">MD Reader · MIT-licensed · © MalloyTheDev</div>
     </footer>
   </body>
 </html>

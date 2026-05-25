@@ -6,7 +6,8 @@ on:
   pull_request:
 
 jobs:
-  check:
+  # Lint, type-check, and unit tests — fast, cross-platform.
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,9 +17,49 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Lint
+        run: npm run lint
       - name: Type-check
         run: npm run typecheck
       - name: Unit tests
-        run: npm run test
-      - name: Lint (non-blocking)
-        run: npm run lint || true
+        run: npm test
+
+  # Build the Windows app (unsigned) and validate that a real artifact was produced.
+  build:
+    runs-on: windows-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build check (electron-vite + unpacked package)
+        # Skip signing/cert discovery in CI — there is no certificate, and this avoids the
+        # winCodeSign download. The build is intentionally unsigned here.
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run build:unpack
+      - name: Validate release artifact
+        shell: pwsh
+        run: |
+          $exe = "dist/win-unpacked/md-reader.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Packaged executable not found: $exe"
+            exit 1
+          }
+          $size = (Get-Item $exe).Length
+          if ($size -lt 1MB) {
+            Write-Error "Packaged executable is suspiciously small ($size bytes)"
+            exit 1
+          }
+          Write-Host ("OK: {0} ({1:N1} MB)" -f $exe, ($size / 1MB))
+      - name: Upload unpacked build
+        uses: actions/upload-artifact@v4
+        with:
+          name: md-reader-win-unpacked
+          path: dist/win-unpacked
+          retention-days: 7
+          if-no-files-found: error

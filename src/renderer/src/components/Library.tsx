@@ -10,7 +10,12 @@ function fallbackTitle(name: string): string {
 }
 
 function baseName(p: string): string {
-  return p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p
+  return (
+    p
+      .replace(/[\\/]+$/, '')
+      .split(/[\\/]/)
+      .pop() || p
+  )
 }
 
 function coverHue(seed: string): number {
@@ -469,10 +474,14 @@ export function Library({
                         }}
                       >
                         <span className="recent-name">📂 Open another folder…</span>
-                        <span className="recent-path">Browse your computer for a folder of notes</span>
+                        <span className="recent-path">
+                          Browse your computer for a folder of notes
+                        </span>
                       </button>
                     </li>
-                    {recentFolders.length > 0 && <li className="recent-divider" aria-hidden="true" />}
+                    {recentFolders.length > 0 && (
+                      <li className="recent-divider" aria-hidden="true" />
+                    )}
                     {recentFolders.map((p) => (
                       <li key={p}>
                         <button

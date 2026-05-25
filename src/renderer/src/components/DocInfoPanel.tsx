@@ -32,8 +32,7 @@ export function DocInfoPanel({ title, stats, brokenLinks, onClose }: Props): Rea
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const taskPct =
-    stats.tasksTotal > 0 ? Math.round((stats.tasksDone / stats.tasksTotal) * 100) : 0
+  const taskPct = stats.tasksTotal > 0 ? Math.round((stats.tasksDone / stats.tasksTotal) * 100) : 0
 
   return (
     <>
@@ -66,7 +65,9 @@ export function DocInfoPanel({ title, stats, brokenLinks, onClose }: Props): Rea
             <span className="docinfo-value">
               {stats.tasksDone}/{stats.tasksTotal}
             </span>
-            <span className="docinfo-label">Tasks {stats.tasksTotal > 0 ? `(${taskPct}%)` : ''}</span>
+            <span className="docinfo-label">
+              Tasks {stats.tasksTotal > 0 ? `(${taskPct}%)` : ''}
+            </span>
           </div>
         </div>
 
@@ -77,8 +78,8 @@ export function DocInfoPanel({ title, stats, brokenLinks, onClose }: Props): Rea
           ) : (
             <>
               <p className="docinfo-warn">
-                ⚠ {brokenLinks.length} wiki-link{brokenLinks.length === 1 ? '' : 's'} point to a note
-                that doesn’t exist:
+                ⚠ {brokenLinks.length} wiki-link{brokenLinks.length === 1 ? '' : 's'} point to a
+                note that doesn’t exist:
               </p>
               <ul className="docinfo-broken">
                 {brokenLinks.map((b) => (

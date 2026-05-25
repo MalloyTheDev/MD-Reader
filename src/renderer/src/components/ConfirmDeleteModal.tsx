@@ -70,7 +70,9 @@ export function ConfirmDeleteModal({
             <span className="confirm-choice-desc">
               {folderMode
                 ? `Moves the folder${
-                    folderFileCount ? ` and its ${folderFileCount} file${folderFileCount === 1 ? '' : 's'}` : ''
+                    folderFileCount
+                      ? ` and its ${folderFileCount} file${folderFileCount === 1 ? '' : 's'}`
+                      : ''
                   } to the Recycle Bin.`
                 : 'Moves the file to the Recycle Bin and removes it everywhere in the app.'}
             </span>

@@ -111,6 +111,6 @@ A broken diagram shows an error panel with the source — it never crashes the p
 
 ```mermaid
 graph TD
-  A --> 
+  A -->
   B[[[oops
 ```

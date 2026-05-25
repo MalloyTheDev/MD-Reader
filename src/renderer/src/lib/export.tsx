@@ -59,11 +59,7 @@ export async function prerenderMermaid(
     mermaid.initialize({
       startOnLoad: false,
       theme:
-        theme === 'dark' || theme === 'nord'
-          ? 'dark'
-          : theme === 'sepia'
-            ? 'neutral'
-            : 'default',
+        theme === 'dark' || theme === 'nord' ? 'dark' : theme === 'sepia' ? 'neutral' : 'default',
       securityLevel: 'strict'
     })
     for (const src of sources) {
@@ -122,7 +118,8 @@ function makeStaticComponents(mermaidSvgs: Map<string, string>): Components {
         }
         if (lang === 'mermaid') {
           const svg = mermaidSvgs.get(src.trim())
-          if (svg) return <div className="mermaid-export" dangerouslySetInnerHTML={{ __html: svg }} />
+          if (svg)
+            return <div className="mermaid-export" dangerouslySetInnerHTML={{ __html: svg }} />
           return <pre>{src}</pre>
         }
       }
@@ -148,12 +145,15 @@ export async function renderBodyHtml(content: string, theme = 'light'): Promise<
 function escapeHtml(s: string): string {
   return s.replace(
     /[&<>"']/g,
-    (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string
   )
 }
 
-export async function renderDocHtml(content: string, title: string, theme = 'light'): Promise<string> {
+export async function renderDocHtml(
+  content: string,
+  title: string,
+  theme = 'light'
+): Promise<string> {
   const body = await renderBodyHtml(content, theme)
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>

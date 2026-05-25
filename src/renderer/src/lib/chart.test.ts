@@ -70,8 +70,13 @@ describe('parseChart', () => {
   })
 
   it('caps very large data arrays to a sane maximum length', () => {
-    const big = 'type: line\nx: [' + Array.from({ length: 5000 }, (_, i) => i).join(',') + ']\n' +
-      'y: [' + Array.from({ length: 5000 }, (_, i) => i).join(',') + ']'
+    const big =
+      'type: line\nx: [' +
+      Array.from({ length: 5000 }, (_, i) => i).join(',') +
+      ']\n' +
+      'y: [' +
+      Array.from({ length: 5000 }, (_, i) => i).join(',') +
+      ']'
     const r = parseChart(big)
     if ('spec' in r) {
       expect(r.spec.series[0].data.length).toBeLessThanOrEqual(2000)

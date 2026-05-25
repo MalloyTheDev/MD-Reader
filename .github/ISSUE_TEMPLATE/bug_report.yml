@@ -1,7 +1,7 @@
 name: Bug report
 description: Something isn't working as expected
-title: "[Bug]: "
-labels: ["bug"]
+title: '[Bug]: '
+labels: ['bug']
 body:
   - type: markdown
     attributes:
@@ -11,7 +11,7 @@ body:
     attributes:
       label: MD Reader version
       description: Shown in the installer filename / title bar (e.g. 1.4.2).
-      placeholder: "1.4.2"
+      placeholder: '1.4.2'
     validations:
       required: true
   - type: dropdown

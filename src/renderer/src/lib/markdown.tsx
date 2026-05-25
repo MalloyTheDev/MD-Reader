@@ -88,7 +88,11 @@ function rehypeMathActions() {
               {
                 type: 'element',
                 tagName: 'button',
-                properties: { type: 'button', className: ['math-expand'], title: 'Expand equation' },
+                properties: {
+                  type: 'button',
+                  className: ['math-expand'],
+                  title: 'Expand equation'
+                },
                 children: [{ type: 'text', value: 'Expand' }]
               }
             ]
@@ -304,7 +308,11 @@ function MermaidView({
   return (
     <div className={'mermaid-view' + (fullscreen ? ' is-fullscreen' : '')}>
       <div className="mermaid-toolbar">
-        <button type="button" title="Zoom out" onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}>
+        <button
+          type="button"
+          title="Zoom out"
+          onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}
+        >
           −
         </button>
         <span className="mermaid-zoom">{Math.round(zoom * 100)}%</span>
@@ -325,10 +333,18 @@ function MermaidView({
         <button type="button" title="Copy Mermaid source" onClick={() => copyText(source)}>
           Copy
         </button>
-        <button type="button" title="Export as SVG" onClick={() => downloadBlob(svg, 'image/svg+xml', 'diagram.svg')}>
+        <button
+          type="button"
+          title="Export as SVG"
+          onClick={() => downloadBlob(svg, 'image/svg+xml', 'diagram.svg')}
+        >
           SVG
         </button>
-        <button type="button" title="Export as PNG" onClick={() => exportSvgAsPng(svg, 'diagram.png')}>
+        <button
+          type="button"
+          title="Export as PNG"
+          onClick={() => exportSvgAsPng(svg, 'diagram.png')}
+        >
           PNG
         </button>
       </div>
@@ -521,7 +537,9 @@ export function ChartSvg({ spec }: { spec: ChartSpec }): React.JSX.Element {
   let xMin = 0
   let xMax = 1
   if (isScatter) {
-    xNums = spec.x.map((v) => (typeof v === 'number' ? v : Number(v))).map((v) => (isNaN(v) ? 0 : v))
+    xNums = spec.x
+      .map((v) => (typeof v === 'number' ? v : Number(v)))
+      .map((v) => (isNaN(v) ? 0 : v))
     if (!xNums.length) xNums = spec.series[0].data.map((_, i) => i)
     xMin = Math.min(...xNums)
     xMax = Math.max(...xNums)
@@ -613,10 +631,16 @@ export function ChartSvg({ spec }: { spec: ChartSpec }): React.JSX.Element {
             const maxChars = Math.max(4, Math.floor(step / 7) - 2)
             return spec.series.map((s, si) => {
               const name = s.name || 'Series ' + (si + 1)
-              const label = name.length > maxChars ? name.slice(0, Math.max(1, maxChars - 1)) + '…' : name
+              const label =
+                name.length > maxChars ? name.slice(0, Math.max(1, maxChars - 1)) + '…' : name
               return (
                 <g key={si} transform={`translate(${L + si * step}, ${H - 6})`}>
-                  <rect width={10} height={10} y={-9} fill={CHART_COLORS[si % CHART_COLORS.length]} />
+                  <rect
+                    width={10}
+                    height={10}
+                    y={-9}
+                    fill={CHART_COLORS[si % CHART_COLORS.length]}
+                  />
                   <text x={14} y={0} className="chart-axis-label">
                     {label}
                   </text>

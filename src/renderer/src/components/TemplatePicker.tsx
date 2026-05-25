@@ -1,9 +1,5 @@
 import { useEffect } from 'react'
-import {
-  TEMPLATE_CATEGORIES,
-  templatesByCategory,
-  type DocTemplate
-} from '../lib/templates'
+import { TEMPLATE_CATEGORIES, templatesByCategory, type DocTemplate } from '../lib/templates'
 
 interface Props {
   onChoose: (t: DocTemplate) => void

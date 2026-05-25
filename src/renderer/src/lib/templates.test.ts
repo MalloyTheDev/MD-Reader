@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  TEMPLATES,
-  TEMPLATE_CATEGORIES,
-  getTemplate,
-  templatesByCategory
-} from './templates'
+import { TEMPLATES, TEMPLATE_CATEGORIES, getTemplate, templatesByCategory } from './templates'
 
 const ctx = { date: '2026-05-25' }
 
@@ -39,7 +34,13 @@ describe('document templates', () => {
   })
 
   it('embeds the context date in dated templates', () => {
-    const dated = ['design-doc', 'lab-experiment', 'lecture-notes', 'meeting-notes', 'daily-journal']
+    const dated = [
+      'design-doc',
+      'lab-experiment',
+      'lecture-notes',
+      'meeting-notes',
+      'daily-journal'
+    ]
     for (const id of dated) {
       const t = getTemplate(id)
       expect(t).toBeTruthy()
@@ -49,7 +50,8 @@ describe('document templates', () => {
 
   it('assigns every template a known category, and every category has templates', () => {
     for (const t of TEMPLATES) expect(TEMPLATE_CATEGORIES).toContain(t.category)
-    for (const cat of TEMPLATE_CATEGORIES) expect(templatesByCategory(cat).length).toBeGreaterThan(0)
+    for (const cat of TEMPLATE_CATEGORIES)
+      expect(templatesByCategory(cat).length).toBeGreaterThan(0)
   })
 
   it('getTemplate returns undefined for an unknown id', () => {
