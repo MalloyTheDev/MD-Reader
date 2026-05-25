@@ -7,8 +7,8 @@ the pagination split it into several pages.
 
 ## The reading surface
 
-A good reading surface gets out of the way. The measure — the number of
-characters per line — matters more than almost anything else. Lines that are too
+A good reading surface gets out of the way. The measure - the number of
+characters per line - matters more than almost anything else. Lines that are too
 long make it hard for the eye to find the start of the next line; lines that are
 too short break the rhythm of reading. Somewhere between fifty and seventy-five
 characters tends to feel right for most people, which is why MD Reader lets you
@@ -17,7 +17,7 @@ adjust the width directly.
 Typography also depends on contrast. Pure black on pure white can feel harsh
 under bright light, which is why the sepia theme exists: a warm paper tone with
 soft brown ink. In a dark room, the dark theme reduces glare. None of these are
-merely cosmetic — they change how long you can read before your eyes tire.
+merely cosmetic - they change how long you can read before your eyes tire.
 
 ### Margins and breathing room
 
@@ -37,8 +37,8 @@ app tries to recreate.
 
 If you close a book and come back later, you expect it to open where you left
 off. MD Reader remembers your page for each file. Even better, it remembers the
-_heading_ you were near, so if you change the font size — which changes how many
-pages there are — it still brings you back to the right spot rather than a stale
+_heading_ you were near, so if you change the font size - which changes how many
+pages there are - it still brings you back to the right spot rather than a stale
 page number.
 
 ### Why anchors beat page numbers

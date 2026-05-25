@@ -5,7 +5,7 @@ import { isInside, safeSeg } from './safe-path'
 // Build paths with the platform separator so these assertions hold on Windows and POSIX CI alike.
 const root = join('/srv', 'vault')
 
-describe('isInside — library-root confinement (path traversal / delete-outside-root)', () => {
+describe('isInside - library-root confinement (path traversal / delete-outside-root)', () => {
   it('accepts a file directly inside the root', () => {
     expect(isInside(root, join(root, 'note.md'))).toBe(true)
   })
@@ -37,7 +37,7 @@ describe('isInside — library-root confinement (path traversal / delete-outside
   })
 })
 
-describe('safeSeg — filename sanitization', () => {
+describe('safeSeg - filename sanitization', () => {
   it('preserves an ordinary name (including spaces)', () => {
     expect(safeSeg('My Study Note')).toBe('My Study Note')
   })

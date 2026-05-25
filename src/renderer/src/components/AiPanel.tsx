@@ -50,15 +50,15 @@ function strictInstruction(
     case 'explain':
       return `Explain the following excerpt in simple, clear terms. Define any jargon.\n\n"""${selection}"""`
     case 'flashcards':
-      return 'Create 6-10 study flashcards from the document above. Respond with ONLY a JSON array of objects shaped {"q": "question", "a": "answer"} — no prose, no code fences.'
+      return 'Create 6-10 study flashcards from the document above. Respond with ONLY a JSON array of objects shaped {"q": "question", "a": "answer"} - no prose, no code fences.'
     case 'studyguide':
       return 'Create a structured study guide for the document above: key concepts, definitions, and a few review questions. Use Markdown headings and bullet points.'
     case 'quiz':
       return 'Write a 5-question quiz based on the document above (mix of multiple-choice and short-answer), then an answer key at the end. Use Markdown.'
     case 'suggestlinks':
-      return `From the document above, suggest cross-links to related notes. Available note titles: ${titles.join(' | ')}. Recommend 3-8 as a Markdown list, each "[[Title]] — one-line reason". Only use titles from the list.`
+      return `From the document above, suggest cross-links to related notes. Available note titles: ${titles.join(' | ')}. Recommend 3-8 as a Markdown list, each "[[Title]] - one-line reason". Only use titles from the list.`
     case 'keyterms':
-      return 'Extract the key terms and vocabulary from the document above. Return a Markdown list where each item is "**term** — a concise definition".'
+      return 'Extract the key terms and vocabulary from the document above. Return a Markdown list where each item is "**term** - a concise definition".'
     case 'eli5':
       return 'Explain the document above simply, as if to a curious beginner (ELI5). Use short paragraphs, plain language, and a helpful analogy where it fits.'
     case 'critique':
@@ -304,8 +304,8 @@ export function AiPanel({
       ) : !status.configured ? (
         <div className="ai-setup">
           <p className="ai-hint">
-            No AI provider is set up yet. Choose a provider and add a key — or point at a local
-            Ollama server — in Settings → AI.
+            No AI provider is set up yet. Choose a provider and add a key - or point at a local
+            Ollama server - in Settings → AI.
           </p>
           <button type="button" className="btn btn-primary" onClick={onConfigure}>
             Open AI settings

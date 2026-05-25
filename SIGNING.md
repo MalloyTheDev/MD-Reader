@@ -2,18 +2,18 @@
 
 The installer (`dist/md-reader-<version>-setup.exe`) is **unsigned by default**, so Windows
 SmartScreen shows an "unknown publisher" warning. Signing it with a certificate from a trusted
-Certificate Authority removes that — though brand-new certificates still build SmartScreen
+Certificate Authority removes that - though brand-new certificates still build SmartScreen
 "reputation" over time/downloads before the warning disappears entirely.
 
 > You provide the certificate; this repo is already wired to use it. I can't obtain a cert for
-> you — CAs require a paid, identity-verified purchase, and OV/EV certs are typically issued to a
+> you - CAs require a paid, identity-verified purchase, and OV/EV certs are typically issued to a
 > hardware token (YubiKey) or a cloud HSM, not as a plain file.
 
 The signing config lives under `win:` in `electron-builder.yml`. Pick **one** option below.
 
 ---
 
-## Option A — Traditional certificate (.pfx file or cloud HSM)
+## Option A - Traditional certificate (.pfx file or cloud HSM)
 
 Works if your CA gave you an exportable `.pfx`/`.p12`, or a cloud-signing tool that plugs into
 `signtool` (DigiCert KeyLocker, SSL.com eSigner, etc.).
@@ -37,9 +37,9 @@ Works if your CA gave you an exportable `.pfx`/`.p12`, or a cloud-signing tool t
 
 ---
 
-## Option B — Azure Trusted Signing (recommended for new certs)
+## Option B - Azure Trusted Signing (recommended for new certs)
 
-Microsoft's cloud signing service — well suited to the post-Feb-2026 rules where standard certs
+Microsoft's cloud signing service - well suited to the post-Feb-2026 rules where standard certs
 are 1-year and key-protected. No local hardware token needed.
 
 1. In Azure: create a **Trusted Signing account** + a **certificate profile**, and an app

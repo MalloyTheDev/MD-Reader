@@ -94,7 +94,7 @@ export function CoursePanel({
 
   const buildOverview = (o: Outline): string => {
     const lessons = o.lessons
-      .map((L, i) => `${i + 1}. [[${pad(i + 1)} - ${L.title}]] — ${L.summary}`)
+      .map((L, i) => `${i + 1}. [[${pad(i + 1)} - ${L.title}]] - ${L.summary}`)
       .join('\n')
     return `# ${o.title}\n\nA self-study course on **${topic.trim()}**, generated lesson by lesson.\n\n## Lessons\n${lessons}\n\n## Study\n- [[Quiz]]\n- [[Flashcards]]\n`
   }
@@ -120,7 +120,7 @@ export function CoursePanel({
           {
             action: 'courselesson',
             question: topic.trim(),
-            selection: `${L.title} — ${L.summary}`,
+            selection: `${L.title} - ${L.summary}`,
             doc: '',
             ...aiCfg
           },
@@ -194,8 +194,8 @@ export function CoursePanel({
         {configured === false ? (
           <div className="ai-setup">
             <p className="ai-hint">
-              No AI provider is set up yet. Choose a provider and add a key — or point at a local
-              Ollama server — in Settings → AI.
+              No AI provider is set up yet. Choose a provider and add a key - or point at a local
+              Ollama server - in Settings → AI.
             </p>
             <button type="button" className="btn btn-primary" onClick={onConfigure}>
               Open AI settings
@@ -206,8 +206,8 @@ export function CoursePanel({
             {phase === 'topic' && (
               <>
                 <p className="sv-hint">
-                  Enter a topic and AI will design a short course — lessons, a quiz, and a flashcard
-                  deck — saved as a new folder of notes.
+                  Enter a topic and AI will design a short course - lessons, a quiz, and a flashcard
+                  deck - saved as a new folder of notes.
                 </p>
                 <input
                   className="sv-text"
@@ -242,7 +242,7 @@ export function CoursePanel({
                   {outline.lessons.map((L, i) => (
                     <li key={i}>
                       <span className="course-lesson-title">{L.title}</span>
-                      {L.summary && <span className="course-lesson-sum"> — {L.summary}</span>}
+                      {L.summary && <span className="course-lesson-sum"> - {L.summary}</span>}
                     </li>
                   ))}
                 </ol>

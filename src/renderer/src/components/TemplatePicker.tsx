@@ -26,7 +26,7 @@ export function TemplatePicker({ onChoose, onClose }: Props): React.JSX.Element 
           </button>
         </div>
         <p className="template-sub">
-          Pick a starting point — it opens in the editor, ready to fill in.
+          Pick a starting point - it opens in the editor, ready to fill in.
         </p>
         <div className="template-scroll">
           {TEMPLATE_CATEGORIES.map((cat) => (

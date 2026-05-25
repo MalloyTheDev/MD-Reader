@@ -286,7 +286,7 @@ export function Library({
     )
   }
 
-  // Only show the whole-library empty state when nothing is filtered — otherwise an empty
+  // Only show the whole-library empty state when nothing is filtered - otherwise an empty
   // tag/folder filter would strand the user with no folder bar / no way back.
   if (files.length === 0 && !activeFolder && !activeTag) {
     return (
@@ -501,7 +501,7 @@ export function Library({
                     {recentFolders.length === 0 && (
                       <li>
                         <span className="recent-empty">
-                          No other folders yet — open one above and it’ll appear here.
+                          No other folders yet - open one above and it’ll appear here.
                         </span>
                       </li>
                     )}

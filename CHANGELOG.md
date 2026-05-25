@@ -2,25 +2,25 @@
 
 All notable changes to MD Reader. Versions are published as Windows installers on the
 [Releases](https://github.com/MalloyTheDev/MD-Reader/releases) page. (Installers are currently
-unsigned — see [Windows install notes](README.md#windows-install-notes).)
+unsigned - see [Windows install notes](README.md#windows-install-notes).)
 
-## [1.4.2] — 2026-05-25
+## [1.4.2] - 2026-05-25
 
 ### Fixed
 
 - The folder-navigation control is now **always visible** in the library toolbar as **📂 Folders ▾**
   (it was previously hidden when you had no other folder open). Its menu offers _Open another
-  folder…_ plus one-click switching to any recent folder — so you're never stuck without a way out.
+  folder…_ plus one-click switching to any recent folder - so you're never stuck without a way out.
 
-## [1.4.1] — 2026-05-25
+## [1.4.1] - 2026-05-25
 
 ### Added
 
 - **Recent folders**: the app remembers every library root you open and lets you switch back in one
-  click, including a _Back to <folder>_ button on the empty-library screen — no re-browsing the file
+  click, including a _Back to <folder>_ button on the empty-library screen - no re-browsing the file
   system. A removed/missing folder is dropped from the list with a notice.
 
-## [1.4.0] — 2026-05-25
+## [1.4.0] - 2026-05-25
 
 A large "power-user" upgrade delivered in 10 audited phases.
 
@@ -44,14 +44,14 @@ A large "power-user" upgrade delivered in 10 audited phases.
 - Per-phase security & bug/code audits; fixed ReDoS, false-positive feature detection, and several
   edge-case bugs uncovered during review.
 
-## [1.3.0] — 2026-05-25
+## [1.3.0] - 2026-05-25
 
 ### Added
 
 - A managed **vault** (`Documents/MD Reader`), collection **folders**, and file/folder **import**.
 - An **AI README generator** that studies a project's source code.
 
-## [1.2.0] — 2026-05-25
+## [1.2.0] - 2026-05-25
 
 ### Added
 
@@ -60,7 +60,7 @@ A large "power-user" upgrade delivered in 10 audited phases.
 - Generative features: study assistant, repurpose-a-doc, topic → course pack, and auto-organize
   (title / tags / links).
 
-## [1.1.0] — 2026-05-25
+## [1.1.0] - 2026-05-25
 
 ### Added
 

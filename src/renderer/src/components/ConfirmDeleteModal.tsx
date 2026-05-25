@@ -54,7 +54,7 @@ export function ConfirmDeleteModal({
             <button type="button" className="confirm-choice" onClick={onRemove} disabled={busy}>
               <span className="confirm-choice-title">Remove from Library</span>
               <span className="confirm-choice-desc">
-                Hides it from the app only — the file stays on your disk. You can undo this.
+                Hides it from the app only - the file stays on your disk. You can undo this.
               </span>
             </button>
           )}

@@ -30,7 +30,7 @@ describe('purgeState', () => {
     expect('/lib/a.md' in next.aiChats).toBe(false)
     expect(next.favorites).toEqual(['/lib/b.md'])
     expect(next.hidden).toEqual([])
-    // Recent folders are library roots, not files — they must survive a file purge.
+    // Recent folders are library roots, not files - they must survive a file purge.
     expect(next.recentFolders).toEqual(['/lib', '/other'])
   })
 

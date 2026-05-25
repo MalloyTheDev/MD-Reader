@@ -751,7 +751,7 @@ function App(): React.JSX.Element {
   }, [])
 
   // Strip one or more paths from all persisted references (favorites, recents, annotations,
-  // bookmarks, positions, ai chats, hidden), close any open tab, and persist — used on delete/cleanup.
+  // bookmarks, positions, ai chats, hidden), close any open tab, and persist - used on delete/cleanup.
   const applyPurge = useCallback(
     (paths: string[]) => {
       let s: PersistedState = {
@@ -982,7 +982,7 @@ function App(): React.JSX.Element {
           void buildLibraryIndex(p)
           void window.api.setState({ lastFolder: p })
         } catch {
-          /* vault unavailable — fall through to welcome */
+          /* vault unavailable - fall through to welcome */
         }
       }
       setReady(true)
@@ -1027,7 +1027,7 @@ function App(): React.JSX.Element {
       try {
         list = await window.api.listMarkdown(folderPath)
       } catch {
-        // The folder was moved/deleted/unmounted — drop it from recents and tell the user.
+        // The folder was moved/deleted/unmounted - drop it from recents and tell the user.
         const norm = (p: string): string => p.replace(/\\/g, '/').toLowerCase()
         const next = recentFoldersRef.current.filter((p) => norm(p) !== norm(folderPath))
         recentFoldersRef.current = next
@@ -1911,7 +1911,7 @@ function App(): React.JSX.Element {
           </button>
           <div
             className="math-modal markdown-body"
-            // KaTeX output we generated ourselves — safe to inject.
+            // KaTeX output we generated ourselves - safe to inject.
             dangerouslySetInnerHTML={{ __html: expandedMath }}
             onClick={(e) => e.stopPropagation()}
           />

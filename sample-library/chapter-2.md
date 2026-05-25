@@ -14,8 +14,8 @@ flow, everything reflows correctly when you resize the window or change the font
 ### Counting the pages
 
 Once the column is laid out, the app measures its total width and divides by the
-width of a single page. That gives the page count. When anything changes — window
-size, font size, reading width — it measures again and recomputes.
+width of a single page. That gives the page count. When anything changes - window
+size, font size, reading width - it measures again and recomputes.
 
 ## Where your settings live
 
@@ -25,9 +25,9 @@ Nothing leaves your computer; there is no account and no network.
 
 ## Keyboard shortcuts
 
-- **Right arrow / Page Down / Space** — next page
-- **Left arrow / Page Up** — previous page
-- **Home** — first page
-- **End** — last page
+- **Right arrow / Page Down / Space** - next page
+- **Left arrow / Page Up** - previous page
+- **Home** - first page
+- **End** - last page
 
 That is the whole tour. Head back to the [handbook](README.md) whenever you like.

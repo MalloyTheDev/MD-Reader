@@ -45,6 +45,6 @@ body:
     id: screenshots
     attributes:
       label: Screenshots or notes
-      description: Optional — drag images here, or paste any error text.
+      description: Optional - drag images here, or paste any error text.
     validations:
       required: false

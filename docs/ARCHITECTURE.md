@@ -1,6 +1,6 @@
 # Architecture
 
-MD Reader is an Electron app with three isolated layers — **main**, **preload**, and **renderer** —
+MD Reader is an Electron app with three isolated layers - **main**, **preload**, and **renderer** -
 plus a set of pure, unit-tested libraries that hold the interesting logic. This document explains
 how the pieces fit together.
 
@@ -30,20 +30,20 @@ alias.
 
 The only layer with Node and OS access. Responsibilities:
 
-- **`index.ts`** — creates the `BrowserWindow` (with `contextIsolation`, `nodeIntegration: false`,
+- **`index.ts`** - creates the `BrowserWindow` (with `contextIsolation`, `nodeIntegration: false`,
   the preload script), registers the custom **`mdimg://`** protocol for serving local images
   (root-confined + realpath-checked), restores window bounds, and handles file-association /
   single-instance open paths.
-- **`ipc.ts`** — the bulk of privileged behavior: walking a folder into a Markdown file list,
+- **`ipc.ts`** - the bulk of privileged behavior: walking a folder into a Markdown file list,
   reading/writing files, front-matter parsing (`gray-matter`), the managed **vault** + folder
   creation + import, `chokidar` file watching (debounced change events), `shell.trashItem`
   deletes, `shell.showItemInFolder`, and the source-code **digest** for AI README generation
   (with secret-skipping + redaction). Every path is guarded by `isInsideRoot`.
-- **`safe-path.ts`** — pure `isInside(root, path)` confinement check and `safeSeg(name)` filename
+- **`safe-path.ts`** - pure `isInside(root, path)` confinement check and `safeSeg(name)` filename
   sanitizer (no Electron deps, so they're unit-tested directly).
-- **`ai.ts`** — the AI provider integration (see _AI provider boundary_ below).
-- **`store.ts`** — JSON config persistence in the app's `userData` dir (window bounds, last folder,
-  recent folders, encrypted AI key blobs). **`sidecar.ts`** — per-folder `.mdreader/data.json`
+- **`ai.ts`** - the AI provider integration (see _AI provider boundary_ below).
+- **`store.ts`** - JSON config persistence in the app's `userData` dir (window bounds, last folder,
+  recent folders, encrypted AI key blobs). **`sidecar.ts`** - per-folder `.mdreader/data.json`
   holding positions/bookmarks/annotations so notes travel with the folder.
 
 ## Preload bridge (`src/preload/index.ts`)
@@ -51,21 +51,21 @@ The only layer with Node and OS access. Responsibilities:
 A thin, security-critical shim. It uses `contextBridge.exposeInMainWorld('api', …)` to publish a
 **fixed, typed `window.api`** whose methods map to `ipcRenderer.invoke(channel, …)` (request/reply)
 or `ipcRenderer.on(channel, …)` (events: file-changed, AI stream chunks, open-path). The renderer
-can only reach the main process through these declared methods — there is no general IPC access.
+can only reach the main process through these declared methods - there is no general IPC access.
 The shape is typed by `MdReaderApi` in `src/shared/types.ts`.
 
 ## Renderer (`src/renderer/src`)
 
-A sandboxed React 19 app (Vite-built). It never touches the filesystem directly — only
+A sandboxed React 19 app (Vite-built). It never touches the filesystem directly - only
 `window.api`. Key parts:
 
-- **`App.tsx`** — top-level state and orchestration: the open folder, file list, current document,
+- **`App.tsx`** - top-level state and orchestration: the open folder, file list, current document,
   tabs, settings, search query, panels (AI, create, settings, doc-info, templates), and persistence
   wiring.
-- **`components/`** — `Library` (bookshelf + shelf actions + folder nav), `Reader` (paginated
+- **`components/`** - `Library` (bookshelf + shelf actions + folder nav), `Reader` (paginated
   view), `Editor`, `SettingsView`, `GraphView`, `AiPanel`, `TemplatePicker`, `DocInfoPanel`,
   `ConfirmDeleteModal`, etc.
-- **`lib/`** — **pure, testable** logic with no React/Electron deps: `markdown.tsx` (remark/rehype
+- **`lib/`** - **pure, testable** logic with no React/Electron deps: `markdown.tsx` (remark/rehype
   pipeline + components), `chart.ts`, `search.ts`, `docinfo.ts`, `table.ts`, `templates.ts`,
   `annotations.ts`, `graph.ts`, `export.tsx`, `aiClient.ts`. This is where most unit tests point.
 

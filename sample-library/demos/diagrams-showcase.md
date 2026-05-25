@@ -107,7 +107,7 @@ mindmap
 
 ## Error handling (intentional typo)
 
-A broken diagram shows an error panel with the source — it never crashes the page:
+A broken diagram shows an error panel with the source - it never crashes the page:
 
 ```mermaid
 graph TD

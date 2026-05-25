@@ -1,6 +1,6 @@
 # The MD Reader Handbook
 
-Welcome to **MD Reader** — a desktop app that turns a folder of Markdown files
+Welcome to **MD Reader** - a desktop app that turns a folder of Markdown files
 into a comfortable, book-like reading experience. This sample library exists so
 you can try every feature right away. Feel free to delete this `sample-library`
 folder and point the app at your own notes, classwork, or documentation.

@@ -38,7 +38,7 @@ A = \begin{pmatrix} a_{11} & a_{12} \\ a_{21} & a_{22} \end{pmatrix}, \quad
 \det(A) = a_{11}a_{22} - a_{12}a_{21}
 $$
 
-## Physics — constants, units, Maxwell & relativity
+## Physics - constants, units, Maxwell & relativity
 
 Planck constant $h = 6.626\times10^{-34}\ \mathrm{J{\cdot}s}$, speed of light $c = 3.0\times10^{8}\ \mathrm{m/s}$.
 
@@ -57,7 +57,7 @@ $$
 
 ## Quantum mechanics (Dirac notation, operators, Schrödinger)
 
-Bra–ket and an operator expectation value: $\langle \psi | \hat{H} | \psi \rangle$.
+Bra-ket and an operator expectation value: $\langle \psi | \hat{H} | \psi \rangle$.
 
 $$
 i\hbar\frac{\partial}{\partial t}\,|\psi(t)\rangle = \hat{H}\,|\psi(t)\rangle
@@ -96,7 +96,7 @@ $$
 
 ## Genetics
 
-Hardy–Weinberg equilibrium and a genotype table:
+Hardy-Weinberg equilibrium and a genotype table:
 
 $$
 p^2 + 2pq + q^2 = 1

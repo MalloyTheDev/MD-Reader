@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { resolveBaseUrl } from './ai-endpoints'
 
-describe('resolveBaseUrl — provider config + SSRF pin', () => {
+describe('resolveBaseUrl - provider config + SSRF pin', () => {
   it('pins OpenAI to the official host and IGNORES any supplied base URL (SSRF guard)', () => {
     expect(resolveBaseUrl('openai')).toBe('https://api.openai.com/v1')
     expect(resolveBaseUrl('openai', 'http://evil.example.com/v1')).toBe('https://api.openai.com/v1')
@@ -25,7 +25,7 @@ describe('resolveBaseUrl — provider config + SSRF pin', () => {
     expect(resolveBaseUrl('custom', 'https://proxy.internal/v1')).toBe('https://proxy.internal/v1')
   })
 
-  it('returns empty for a custom provider with no base URL (bad config — caller must validate)', () => {
+  it('returns empty for a custom provider with no base URL (bad config - caller must validate)', () => {
     expect(resolveBaseUrl('custom', '')).toBe('')
     expect(resolveBaseUrl('custom')).toBe('')
   })

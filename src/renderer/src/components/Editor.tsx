@@ -316,7 +316,7 @@ export function Editor({
         })
       })
       .catch((err: Error) => {
-        // User pressed Stop — keep whatever streamed so far (and the Undo affordance).
+        // User pressed Stop - keep whatever streamed so far (and the Undo affordance).
         if (err.name === 'AbortError') return
         setText(original)
         setAiUndo(null)

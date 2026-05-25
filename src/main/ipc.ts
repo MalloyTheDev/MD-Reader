@@ -309,7 +309,7 @@ export function registerIpc(): void {
       await fs
         .writeFile(
           welcome,
-          '# Welcome to your MD Reader vault\n\nThis folder is your personal Markdown library — everything you create or import lives here, in one place.\n\n- Make collections with **New folder** (e.g. "Coding Projects", "Studying").\n- **Import** existing Markdown to bring it in.\n- Generate notes, courses, and READMEs with AI — they save here too.\n',
+          '# Welcome to your MD Reader vault\n\nThis folder is your personal Markdown library - everything you create or import lives here, in one place.\n\n- Make collections with **New folder** (e.g. "Coding Projects", "Studying").\n- **Import** existing Markdown to bring it in.\n- Generate notes, courses, and READMEs with AI - they save here too.\n',
           'utf8'
         )
         .catch(() => {})
@@ -452,7 +452,7 @@ export function registerIpc(): void {
       // Allow restoring the previously-used folder; otherwise refuse to widen the root.
       const persisted = (await store.getState()).lastFolder
       if (persisted && resolve(persisted) === root) authorizeRoot(root)
-      else throw new Error('Folder not authorized — open it with the folder picker.')
+      else throw new Error('Folder not authorized - open it with the folder picker.')
     }
     libraryRoot = root
     startWatching(root)

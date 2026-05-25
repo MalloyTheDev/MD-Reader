@@ -1,4 +1,4 @@
-// Curated, static Markdown scaffolds for "New from template". Pure data + builders — no I/O, no
+// Curated, static Markdown scaffolds for "New from template". Pure data + builders - no I/O, no
 // code execution. Each template returns a complete document body (front-matter + content) that the
 // renderer writes into the vault via the normal newFile/writeFile flow.
 
@@ -147,7 +147,7 @@ Create a resource.
     description: 'Technical proposal: context, options, decision, and rollout.',
     fileName: (c) => `Design - ${c.date}`,
     build: (c) => `---
-title: Design Doc — <Title>
+title: Design Doc - <Title>
 tags: [design, rfc]
 date: ${c.date}
 status: draft
@@ -183,8 +183,8 @@ flowchart LR
 
 ## Alternatives considered
 
-1. **Option A** — pros / cons
-2. **Option B** — pros / cons
+1. **Option A** - pros / cons
+2. **Option B** - pros / cons
 
 ## Decision
 
@@ -206,7 +206,7 @@ flowchart LR
     description: 'Operational steps for an incident or routine procedure.',
     fileName: () => 'Runbook',
     build: () => `---
-title: Runbook — <Service>
+title: Runbook - <Service>
 tags: [runbook, ops]
 ---
 
@@ -300,12 +300,12 @@ $$
     description: 'Dated lab entry: hypothesis, procedure, observations, result.',
     fileName: (c) => `Experiment ${c.date}`,
     build: (c) => `---
-title: Experiment — ${c.date}
+title: Experiment - ${c.date}
 tags: [experiment, lab]
 date: ${c.date}
 ---
 
-# Experiment — ${c.date}
+# Experiment - ${c.date}
 
 > [!hypothesis] Hypothesis
 > State the expected outcome and why.
@@ -350,11 +350,11 @@ y: [0, 0, 0, 0, 0]
     description: 'Worked-problem layout with given/find and LaTeX math.',
     fileName: () => 'Problem set',
     build: () => `---
-title: Problem Set — <Topic>
+title: Problem Set - <Topic>
 tags: [physics, problem-set, math]
 ---
 
-# Problem Set — <Topic>
+# Problem Set - <Topic>
 
 ## Problem 1
 
@@ -445,13 +445,13 @@ Describe the functional effect.
     description: 'Dated class notes: objectives, notes, summary, questions.',
     fileName: (c) => `Lecture ${c.date}`,
     build: (c) => `---
-title: Lecture — ${c.date}
+title: Lecture - ${c.date}
 tags: [lecture, notes]
 date: ${c.date}
 course: <Course>
 ---
 
-# Lecture — <Topic>
+# Lecture - <Topic>
 
 **Course:** <Course>  ·  **Date:** ${c.date}
 
@@ -463,7 +463,7 @@ course: <Course>
 
 - Main idea
   - Supporting detail
-- Definition: **term** — meaning
+- Definition: **term** - meaning
 
 ## Key formula / concept
 
@@ -488,11 +488,11 @@ Three-sentence recap in your own words.
     description: 'Exam-prep guide with topics, Q&A, and a flashcard section.',
     fileName: () => 'Study guide',
     build: () => `---
-title: Study Guide — <Subject>
+title: Study Guide - <Subject>
 tags: [study, exam]
 ---
 
-# Study Guide — <Subject>
+# Study Guide - <Subject>
 
 ## Topics to master
 
@@ -530,13 +530,13 @@ tags: [study, exam]
     description: 'Dated agenda, discussion, decisions, and action items.',
     fileName: (c) => `Meeting ${c.date}`,
     build: (c) => `---
-title: Meeting — ${c.date}
+title: Meeting - ${c.date}
 tags: [meeting, notes]
 date: ${c.date}
 attendees: []
 ---
 
-# Meeting — ${c.date}
+# Meeting - ${c.date}
 
 **Attendees:** ...
 
@@ -557,8 +557,8 @@ attendees: []
 
 ## Action items
 
-- [ ] Owner — task — due date
-- [ ] Owner — task — due date
+- [ ] Owner - task - due date
+- [ ] Owner - task - due date
 `
   },
   {
@@ -569,7 +569,7 @@ attendees: []
     description: 'Product requirements: problem, scope, milestones, metrics.',
     fileName: () => 'Project plan',
     build: (c) => `---
-title: Project Plan — <Name>
+title: Project Plan - <Name>
 tags: [project, plan, prd]
 date: ${c.date}
 status: draft
@@ -662,7 +662,7 @@ Tie back to the hook and leave the reader with one idea.
     description: 'Dated journal: focus, log, wins, and reflections.',
     fileName: (c) => `Journal ${c.date}`,
     build: (c) => `---
-title: Journal — ${c.date}
+title: Journal - ${c.date}
 tags: [journal, daily]
 date: ${c.date}
 ---

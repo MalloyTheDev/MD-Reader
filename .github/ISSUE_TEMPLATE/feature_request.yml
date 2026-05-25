@@ -21,6 +21,6 @@ body:
     id: alternatives
     attributes:
       label: Alternatives or extra context
-      description: Optional — other approaches you considered, mockups, or examples.
+      description: Optional - other approaches you considered, mockups, or examples.
     validations:
       required: false

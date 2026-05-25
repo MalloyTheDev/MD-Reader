@@ -60,7 +60,7 @@ Callouts are written as `> [!type] Optional title`. Each type has its own color 
 | Element  | Symbol | Atomic # | Mass (u) | Group | Period | Phase | Electronegativity | Discovered |
 | -------- | ------ | -------- | -------- | ----- | ------ | ----- | ----------------- | ---------- |
 | Hydrogen | H      | 1        | 1.008    | 1     | 1      | gas   | 2.20              | 1766       |
-| Helium   | He     | 2        | 4.0026   | 18    | 1      | gas   | —                 | 1868       |
+| Helium   | He     | 2        | 4.0026   | 18    | 1      | gas   | -                 | 1868       |
 | Carbon   | C      | 6        | 12.011   | 14    | 2      | solid | 2.55              | ancient    |
 | Oxygen   | O      | 8        | 15.999   | 16    | 2      | gas   | 3.44              | 1771       |
 | Iron     | Fe     | 26       | 55.845   | 8     | 4      | solid | 1.83              | ancient    |

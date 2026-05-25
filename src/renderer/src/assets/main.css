@@ -1003,7 +1003,7 @@ button {
   color: #fff;
   font-size: 22px;
 }
-/* KaTeX renders parse errors in place — make them look intentional, not alarming. */
+/* KaTeX renders parse errors in place - make them look intentional, not alarming. */
 .markdown-body .katex-error {
   color: var(--hl-keyword) !important;
   font-family: var(--mono-font);

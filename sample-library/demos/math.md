@@ -14,7 +14,7 @@ $$
 \int_{-\infty}^{\infty} e^{-x^2}\,\dd x = \sqrt{\pi}
 $$
 
-The Cauchy–Schwarz inequality:
+The Cauchy-Schwarz inequality:
 
 $$
 \abs{\langle u, v\rangle} \le \norm{u}\,\norm{v}

@@ -163,7 +163,7 @@ export async function renderDocHtml(
 }
 
 export function annotationsToMarkdown(title: string, anns: Annotation[]): string {
-  let md = `# Highlights & notes — ${title}\n\n`
+  let md = `# Highlights & notes - ${title}\n\n`
   if (anns.length === 0) md += '_No highlights yet._\n'
   for (const a of [...anns].sort((x, y) => x.start - y.start)) {
     if (a.text.trim()) md += `> ${a.text.replace(/\n/g, '\n> ')}\n\n`

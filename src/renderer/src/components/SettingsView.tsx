@@ -237,7 +237,7 @@ function AiSettings({
               value={models.includes(settings.aiModel) ? settings.aiModel : ''}
               onChange={(e) => e.target.value && onChange({ aiModel: e.target.value })}
             >
-              <option value="">{provider === 'ollama' ? '— installed —' : '— presets —'}</option>
+              <option value="">{provider === 'ollama' ? '- installed -' : '- presets -'}</option>
               {models.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -256,7 +256,7 @@ function AiSettings({
       </div>
       <p className="sv-hint">
         {provider === 'ollama'
-          ? 'Runs on your machine via Ollama — no key, fully private.'
+          ? 'Runs on your machine via Ollama - no key, fully private.'
           : needsKey
             ? 'Stored encrypted on this computer; sent only to the provider you choose.'
             : ''}

@@ -108,7 +108,7 @@ export function CreatePanel({
   }
 
   const fmtMeta = FORMATS.find((f) => f.id === format)
-  const suggestedName = `${docTitle || 'Untitled'} — ${fmtMeta?.label ?? 'Repurposed'}`
+  const suggestedName = `${docTitle || 'Untitled'} - ${fmtMeta?.label ?? 'Repurposed'}`
 
   return (
     <>
@@ -124,8 +124,8 @@ export function CreatePanel({
         {configured === false ? (
           <div className="ai-setup">
             <p className="ai-hint">
-              No AI provider is set up yet. Choose a provider and add a key — or point at a local
-              Ollama server — in Settings → AI.
+              No AI provider is set up yet. Choose a provider and add a key - or point at a local
+              Ollama server - in Settings → AI.
             </p>
             <button type="button" className="btn btn-primary" onClick={onConfigure}>
               Open AI settings

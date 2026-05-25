@@ -166,7 +166,7 @@ export interface PersistedState {
   favorites: string[]
   /** Absolute paths hidden from the library ("Remove from Library") without deleting from disk. */
   hidden: string[]
-  /** Recently opened library root folders, most-recent first — for quick switching back. */
+  /** Recently opened library root folders, most-recent first - for quick switching back. */
   recentFolders: string[]
 }
 

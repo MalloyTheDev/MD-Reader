@@ -71,15 +71,15 @@ function instructionFor(req: AiRequest): string {
     case 'explain':
       return `Explain the following excerpt in simple, clear terms. Define any jargon.\n\n"""${req.selection ?? ''}"""`
     case 'flashcards':
-      return 'Create 6-10 study flashcards from the document above. Respond with ONLY a JSON array of objects shaped {"q": "question", "a": "answer"} — no prose, no code fences.'
+      return 'Create 6-10 study flashcards from the document above. Respond with ONLY a JSON array of objects shaped {"q": "question", "a": "answer"} - no prose, no code fences.'
     case 'studyguide':
       return 'Create a structured study guide for the document above: key concepts, definitions, and a few review questions. Use Markdown headings and bullet points.'
     case 'quiz':
       return 'Write a 5-question quiz based on the document above (mix of multiple-choice and short-answer), then an answer key at the end. Use Markdown.'
     case 'suggestlinks':
-      return `From the document above, suggest cross-links to related notes. Available note titles: ${(req.titles ?? []).join(' | ')}. Recommend 3-8 as a Markdown list, each formatted "[[Title]] — one-line reason". Only use titles from the list.`
+      return `From the document above, suggest cross-links to related notes. Available note titles: ${(req.titles ?? []).join(' | ')}. Recommend 3-8 as a Markdown list, each formatted "[[Title]] - one-line reason". Only use titles from the list.`
     case 'keyterms':
-      return 'Extract the key terms and vocabulary from the document above. Return a Markdown list where each item is "**term** — a concise definition".'
+      return 'Extract the key terms and vocabulary from the document above. Return a Markdown list where each item is "**term** - a concise definition".'
     case 'eli5':
       return 'Explain the document above simply, as if to a curious beginner (ELI5). Use short paragraphs, plain language, and a helpful analogy where it fits.'
     case 'critique':
@@ -89,9 +89,9 @@ function instructionFor(req: AiRequest): string {
     case 'write':
       return writeInstruction(req.writeMode ?? 'rewrite', req.selection ?? '')
     case 'organize':
-      return `Analyze the document above and suggest organization metadata. Respond with ONLY a JSON object shaped {"title": "A concise descriptive title", "tags": ["tag1", "tag2"], "links": ["Existing Note Title"]} — no prose, no code fences. Choose 3-6 short lowercase tags. For "links", recommend up to 5 related notes, using ONLY titles from this list (omit if none fit): ${(req.titles ?? []).join(' | ')}.`
+      return `Analyze the document above and suggest organization metadata. Respond with ONLY a JSON object shaped {"title": "A concise descriptive title", "tags": ["tag1", "tag2"], "links": ["Existing Note Title"]} - no prose, no code fences. Choose 3-6 short lowercase tags. For "links", recommend up to 5 related notes, using ONLY titles from this list (omit if none fit): ${(req.titles ?? []).join(' | ')}.`
     case 'courseoutline':
-      return `You are designing a focused self-study course on the topic: "${req.question ?? ''}". Respond with ONLY a JSON object shaped {"title": "Course Title", "lessons": [{"title": "Lesson title", "summary": "one-sentence description"}]} containing 4-7 lessons that build progressively — no prose, no code fences.`
+      return `You are designing a focused self-study course on the topic: "${req.question ?? ''}". Respond with ONLY a JSON object shaped {"title": "Course Title", "lessons": [{"title": "Lesson title", "summary": "one-sentence description"}]} containing 4-7 lessons that build progressively - no prose, no code fences.`
     case 'courselesson':
       return `Write a clear, self-contained lesson for a self-study course on "${req.question ?? ''}". The lesson to write is: ${req.selection ?? ''}\n\nUse Markdown: start with a single "# " heading for the lesson title, then short explanatory sections, concrete examples, and end with a brief "## Key points" bullet list. Do not include quiz questions.`
     case 'readme':
@@ -118,13 +118,13 @@ function writeInstruction(mode: WriteMode, selection: string): string {
   const target = `\n\n"""${selection}"""`
   switch (mode) {
     case 'rewrite':
-      return `Rewrite the text below to improve clarity, flow, and word choice while preserving its meaning and any Markdown formatting. Return ONLY the rewritten text — no preamble, no quotes, no explanation.${target}`
+      return `Rewrite the text below to improve clarity, flow, and word choice while preserving its meaning and any Markdown formatting. Return ONLY the rewritten text - no preamble, no quotes, no explanation.${target}`
     case 'expand':
-      return `Expand the text below with more detail, supporting points, and a concrete example where helpful, matching the original tone. Return ONLY the expanded text — no preamble, no quotes, no explanation.${target}`
+      return `Expand the text below with more detail, supporting points, and a concrete example where helpful, matching the original tone. Return ONLY the expanded text - no preamble, no quotes, no explanation.${target}`
     case 'grammar':
-      return `Correct any spelling, grammar, and punctuation mistakes in the text below. Preserve the meaning, voice, and Markdown formatting. Return ONLY the corrected text — no preamble, no quotes, no explanation.${target}`
+      return `Correct any spelling, grammar, and punctuation mistakes in the text below. Preserve the meaning, voice, and Markdown formatting. Return ONLY the corrected text - no preamble, no quotes, no explanation.${target}`
     case 'continue':
-      return `Continue writing naturally from where the text below ends, matching its tone, style, and formatting. Return ONLY the new continuation text — do not repeat the existing text, and add no preamble or explanation.${target}`
+      return `Continue writing naturally from where the text below ends, matching its tone, style, and formatting. Return ONLY the new continuation text - do not repeat the existing text, and add no preamble or explanation.${target}`
   }
 }
 
@@ -136,9 +136,9 @@ function friendlyError(err: unknown): string {
   const status = (err as any)?.status as number | undefined
   if (status === 401 || status === 403)
     return 'Your API key was rejected. Check that it is valid and has access.'
-  if (status === 429) return 'Rate limited — wait a moment and try again.'
+  if (status === 429) return 'Rate limited - wait a moment and try again.'
   if (status === 500 || status === 529)
-    return 'The provider had a service issue — please try again.'
+    return 'The provider had a service issue - please try again.'
   const msg = err instanceof Error ? err.message : String(err)
   if (/fetch failed|ECONNREFUSED|ENOTFOUND/i.test(msg))
     return 'Could not reach the AI endpoint. Check the base URL (and that Ollama/your server is running).'
@@ -158,7 +158,7 @@ function buildConvo(req: AiRequest): { role: 'user' | 'assistant'; content: stri
 async function runAnthropic(req: AiRequest, send: SendEvent, key: string): Promise<void> {
   const corpus = (req.action === 'library' ? (req.context ?? '') : req.doc).slice(0, MAX_DOC_CHARS)
   const client = new Anthropic({ apiKey: key })
-  // Topic-based actions (e.g. course generation) have no source doc — skip the cached
+  // Topic-based actions (e.g. course generation) have no source doc - skip the cached
   // source block entirely so we don't send an empty text block to the API.
   const sourceFraming = corpus.trim()
     ? [
@@ -172,7 +172,7 @@ async function runAnthropic(req: AiRequest, send: SendEvent, key: string): Promi
             }
           ]
         },
-        { role: 'assistant' as const, content: 'Understood — what would you like to know?' }
+        { role: 'assistant' as const, content: 'Understood - what would you like to know?' }
       ]
     : []
   const stream = client.messages.stream({
@@ -215,7 +215,7 @@ async function runOpenAICompatible(req: AiRequest, send: SendEvent, key: string)
               corpus +
               '\n\n---\nThe text above is the source material for this conversation. Base your answers on it.'
           },
-          { role: 'assistant', content: 'Understood — what would you like to know?' }
+          { role: 'assistant', content: 'Understood - what would you like to know?' }
         ]
       : []),
     ...buildConvo(req)

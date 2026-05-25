@@ -38,7 +38,7 @@ async function readRaw(root: string): Promise<SidecarShape | null> {
       }
     }
   } catch {
-    /* missing or unparseable — treat as absent */
+    /* missing or unparseable - treat as absent */
   }
   return null
 }
@@ -59,7 +59,7 @@ async function migrateFromConfig(root: string): Promise<SidecarShape> {
       if (isInside(root, abs) && pos) ensure(abs).position = pos
     }
   } catch {
-    /* no prior config — fine */
+    /* no prior config - fine */
   }
   return shape
 }

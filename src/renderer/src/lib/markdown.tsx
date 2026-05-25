@@ -520,7 +520,7 @@ export function ChartSvg({ spec }: { spec: ChartSpec }): React.JSX.Element {
 
   const all = spec.series.flatMap((s) => s.data)
   // Reduce-based min/max (not Math.max(...all)) so an empty array can't yield ±Infinity and a
-  // large one can't overflow the argument stack — defends ChartSvg even if parser invariants change.
+  // large one can't overflow the argument stack - defends ChartSvg even if parser invariants change.
   let yMax = all.length ? all.reduce((m, v) => (v > m ? v : m), all[0]) : 1
   let yMin = all.length ? all.reduce((m, v) => (v < m ? v : m), all[0]) : 0
   if (spec.type === 'bar' || spec.type === 'area') yMin = Math.min(0, yMin)
@@ -775,7 +775,7 @@ export function makeComponents(
       if (/^https?:/i.test(src) && !allowRemote) {
         return (
           <span className="img-blocked" title={src}>
-            🚫 remote image blocked — enable “remote images” in settings
+            🚫 remote image blocked - enable “remote images” in settings
           </span>
         )
       }

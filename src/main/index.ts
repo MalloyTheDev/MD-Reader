@@ -172,7 +172,7 @@ if (!gotLock) {
       try {
         real = realpathSync(abs)
       } catch {
-        /* missing file — let net.fetch return the 404 */
+        /* missing file - let net.fetch return the 404 */
       }
       const relReal = relative(root, real)
       if (relReal.startsWith('..') || isAbsolute(relReal)) {

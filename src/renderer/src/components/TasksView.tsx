@@ -65,7 +65,7 @@ export function TasksView({ tasks, onToggle, onOpen, onClose }: TasksViewProps):
             <p className="tasks-empty">
               {total === 0
                 ? 'No checkboxes found. Add "- [ ] something" to any note.'
-                : 'Nothing here — try a different filter.'}
+                : 'Nothing here - try a different filter.'}
             </p>
           ) : (
             groups.map(([fileAbs, g]) => (

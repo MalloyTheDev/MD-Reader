@@ -14,7 +14,7 @@ const SHORTCUTS: [string, string][] = [
   ['🏷', 'Bookmark the current page'],
   ['Aa', 'Theme, font size, width, two-page'],
   ['⎙', 'Print / Save as PDF'],
-  ['Editor: / ', 'Slash menu — insert headings, tables, code, diagrams'],
+  ['Editor: / ', 'Slash menu - insert headings, tables, code, diagrams'],
   ['Editor: Ctrl / ⌘ + H', 'Find & replace'],
   ['Editor: paste / drop image', 'Saves into the library and links it'],
   ['?', 'Show this help'],

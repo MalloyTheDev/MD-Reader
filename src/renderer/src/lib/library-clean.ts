@@ -1,7 +1,7 @@
 import type { PersistedState } from '@shared/types'
 
 /**
- * Return a new PersistedState with every reference to `path` removed — used when a file is
+ * Return a new PersistedState with every reference to `path` removed - used when a file is
  * deleted or removed from the library so it doesn't linger in favorites, recents, annotations, etc.
  * Pure (no mutation) so it's easy to test and safe to feed straight into `setState`.
  */

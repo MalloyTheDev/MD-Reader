@@ -166,7 +166,7 @@ export function parseQuery(raw: string): ParsedQuery {
     if (m && m[2].trim()) {
       const kind = m[1].toLowerCase() as FilterKind
       const value = stripQuotes(m[2]).toLowerCase()
-      // An unknown has:<feature> value isn't a real filter — fall back to searching it as text
+      // An unknown has:<feature> value isn't a real filter - fall back to searching it as text
       // rather than silently matching nothing.
       if (kind === 'has' && !HAS_VALUES.has(value)) textParts.push(value)
       else filters.push({ kind, value })

@@ -1,10 +1,10 @@
-// Pure path-safety helpers for the main process — no Electron / module state, so they can be
+// Pure path-safety helpers for the main process - no Electron / module state, so they can be
 // unit-tested directly. Used by ipc.ts to confine file access to the open library root and to
 // sanitize user/AI-supplied file & folder names.
 import { relative, isAbsolute } from 'node:path'
 
 // True if `abs` is inside (or equal to) `root`. Purely lexical: it rejects `..` traversal and
-// absolute escapes, but does NOT resolve symlinks — callers that must defend against symlinked
+// absolute escapes, but does NOT resolve symlinks - callers that must defend against symlinked
 // escapes (e.g. the mdimg:// protocol) additionally realpath-check before reading bytes.
 export function isInside(root: string | null, abs: string): boolean {
   if (!root) return false

@@ -861,7 +861,7 @@ export function Reader(props: ReaderProps): React.JSX.Element {
               base = decodeURIComponent(u.searchParams.get('base') ?? '')
               p = decodeURIComponent(u.searchParams.get('p') ?? '')
             } catch {
-              /* not an mdimg url (data:/blob:) — no local path */
+              /* not an mdimg url (data:/blob:) - no local path */
             }
             const localPath = p ? (/^([a-zA-Z]:[\\/]|\/)/.test(p) ? p : `${base}/${p}`) : ''
             return (

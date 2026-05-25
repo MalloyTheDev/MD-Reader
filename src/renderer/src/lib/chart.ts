@@ -1,5 +1,5 @@
 // Safe, dependency-free parser for ```chart fenced blocks. Supports a simple key:value spec
-// or a JSON object. NO code execution — values are parsed as strings/numbers/arrays only.
+// or a JSON object. NO code execution - values are parsed as strings/numbers/arrays only.
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'scatter' | 'area'
 export interface ChartSeries {
