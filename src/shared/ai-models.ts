@@ -23,7 +23,7 @@ function idsFrom(json: unknown): string[] {
   const data = (json as { data?: unknown } | null)?.data
   if (!Array.isArray(data)) return []
   return data
-    .map((m) => ((m as ModelEntry)?.id))
+    .map((m) => (m as ModelEntry)?.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 }
 

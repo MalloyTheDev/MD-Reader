@@ -146,16 +146,12 @@ function AiSettings({
     void window.api.aiStatus(provider).then((s) => {
       if (!cancelled) setConfigured(s.configured)
     })
-    setModelsLoading(true)
     void window.api
       .aiListModels(provider, settings.aiBaseUrl)
       .then((m) => {
         if (!cancelled) setModels(m)
       })
       .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setModelsLoading(false)
-      })
     return () => {
       cancelled = true
     }
