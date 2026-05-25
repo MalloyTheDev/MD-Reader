@@ -22,6 +22,7 @@ const DOCS_KEY = 'mdreader-web-docs'
 const THEME_KEY = 'mdreader-web-theme'
 const WIDTH_KEY = 'mdreader-web-width'
 const ZOOM_KEY = 'mdreader-web-zoom'
+const POS_KEY = 'mdreader-web-pos'
 
 const WIDTHS = ['narrow', 'normal', 'wide'] as const
 type Width = (typeof WIDTHS)[number]
@@ -75,6 +76,51 @@ function loadZoom(): number {
   return z >= MIN_ZOOM && z <= MAX_ZOOM ? z : 1
 }
 
+function loadPositions(): Record<string, number> {
+  try {
+    const obj = JSON.parse(localStorage.getItem(POS_KEY) || '{}')
+    if (obj && typeof obj === 'object') {
+      const out: Record<string, number> = {}
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'number' && Number.isFinite(v)) out[k] = v
+      }
+      return out
+    }
+  } catch {
+    /* ignore bad storage */
+  }
+  return {}
+}
+
+// Which heading is currently at the top of the reading pane (for outline scroll-spy).
+function activeHeadingFor(el: HTMLElement, items: Heading[]): string {
+  if (!items.length) return ''
+  const top = el.getBoundingClientRect().top
+  let current = items[0].id
+  for (const h of items) {
+    const node = document.getElementById(h.id)
+    if (!node) continue
+    if (node.getBoundingClientRect().top - top <= 84) current = h.id
+    else break
+  }
+  return current
+}
+
+// Bake copy buttons into code blocks and copy-link anchors into headings, as part of the
+// rendered HTML string so they survive React re-renders. Clicks are handled by delegation.
+function augmentHtml(html: string): string {
+  let out = html.replace(
+    /(<pre(?:\s[^>]*)?>)(<code)/g,
+    '$1<button class="web-codecopy" type="button" aria-label="Copy code">Copy</button>$2'
+  )
+  out = out.replace(
+    /<h([1-6])([^>]*\sid="([^"]+)"[^>]*)>([\s\S]*?)<\/h\1>/g,
+    (_m, lvl, attrs, id, inner) =>
+      `<h${lvl}${attrs}>${inner}<button class="web-anchor" type="button" data-anchor="${id}" aria-label="Copy link to section">#</button></h${lvl}>`
+  )
+  return out
+}
+
 export function WebReader(): React.JSX.Element {
   const [docs, setDocs] = useState<Doc[]>(loadDocs)
   const [active, setActive] = useState(0)
@@ -88,12 +134,27 @@ export function WebReader(): React.JSX.Element {
   const [activeHeadingId, setActiveHeadingId] = useState('')
   const [width, setWidth] = useState<Width>(loadWidth)
   const [zoom, setZoom] = useState<number>(loadZoom)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [showHelp, setShowHelp] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const docRef = useRef<HTMLDivElement>(null)
   const mainRef = useRef<HTMLElement>(null)
   const searchInput = useRef<HTMLInputElement>(null)
+  const positionsRef = useRef<Record<string, number>>(loadPositions())
+  const lastDocRef = useRef<string>('')
+  const renderedDocRef = useRef<string>('')
+  const posTimer = useRef<number | undefined>(undefined)
 
   const activeDoc = docs[active]
+
+  const persistPositions = useCallback(() => {
+    try {
+      localStorage.setItem(POS_KEY, JSON.stringify(positionsRef.current))
+    } catch {
+      /* ignore quota */
+    }
+  }, [])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -127,20 +188,24 @@ export function WebReader(): React.JSX.Element {
   useEffect(() => {
     let cancelled = false
     if (!activeDoc) {
+      renderedDocRef.current = ''
       setHtml('')
       setOutline([])
       return
     }
+    const name = activeDoc.name
     setRendering(true)
     renderBodyHtml(activeDoc.content, theme)
       .then((out) => {
         if (!cancelled) {
-          setHtml(out)
+          renderedDocRef.current = name
+          setHtml(augmentHtml(out))
           setRendering(false)
         }
       })
       .catch(() => {
         if (!cancelled) {
+          renderedDocRef.current = name
           setHtml('<p>Could not render this document.</p>')
           setRendering(false)
         }
@@ -150,11 +215,13 @@ export function WebReader(): React.JSX.Element {
     }
   }, [activeDoc, theme])
 
-  // After render, build the outline from the rendered headings (assigning ids where missing).
+  // After render: build the outline, enhance code blocks and headings, and restore the
+  // saved scroll position when the document (not just the theme) has changed.
   useEffect(() => {
     const root = docRef.current
     if (!root || !html) {
       setOutline([])
+      lastDocRef.current = ''
       return
     }
     const seen = new Set<string>()
@@ -173,26 +240,54 @@ export function WebReader(): React.JSX.Element {
       items.push({ id, text, level: Number(el.tagName.slice(1)) })
     })
     setOutline(items)
-    setActiveHeadingId((prev) => (items.some((i) => i.id === prev) ? prev : items[0]?.id ?? ''))
+
+    const el = mainRef.current
+    const name = renderedDocRef.current
+    if (el && name && name !== lastDocRef.current) {
+      lastDocRef.current = name
+      el.scrollTop = positionsRef.current[name] ?? 0
+    }
+    if (el) {
+      const max = el.scrollHeight - el.clientHeight
+      setProgress(max > 0 ? Math.min(1, el.scrollTop / max) : 0)
+    }
+    setActiveHeadingId(el ? activeHeadingFor(el, items) : items[0]?.id ?? '')
   }, [html])
 
-  // Reset scroll position and progress when switching documents.
+  // Leaving a document active means leaving edit mode for it.
   useEffect(() => {
-    setProgress(0)
-    mainRef.current?.scrollTo({ top: 0 })
+    setEditing(false)
   }, [active])
 
-  // Reader keyboard shortcuts: focus search, clear search, and move between docs.
+  // Commit edits to the in-app copy (and localStorage) shortly after typing stops.
+  useEffect(() => {
+    if (!editing || !activeDoc) return
+    const name = activeDoc.name
+    const id = window.setTimeout(() => {
+      setDocs((prev) => prev.map((d) => (d.name === name && d.content !== draft ? { ...d, content: draft } : d)))
+    }, 300)
+    return () => window.clearTimeout(id)
+  }, [draft, editing, activeDoc])
+
+  // Reader keyboard shortcuts: focus/clear search, move between docs, toggle help.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const mod = e.ctrlKey || e.metaKey
+      const tag = (document.activeElement?.tagName || '').toLowerCase()
+      const inField = tag === 'input' || tag === 'textarea'
       if (mod && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         searchInput.current?.focus()
         searchInput.current?.select()
-      } else if (e.key === 'Escape' && (query || document.activeElement === searchInput.current)) {
-        setQuery('')
-        searchInput.current?.blur()
+      } else if (e.key === '?' && !inField) {
+        e.preventDefault()
+        setShowHelp((h) => !h)
+      } else if (e.key === 'Escape') {
+        if (showHelp) setShowHelp(false)
+        else if (query || document.activeElement === searchInput.current) {
+          setQuery('')
+          searchInput.current?.blur()
+        }
       } else if (mod && (e.key === '[' || e.key === ']') && docs.length > 1) {
         e.preventDefault()
         const dir = e.key === ']' ? 1 : -1
@@ -202,7 +297,7 @@ export function WebReader(): React.JSX.Element {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [docs.length, query])
+  }, [docs.length, query, showHelp])
 
   const searchIndex = useMemo(() => {
     const files: MarkdownFileContent[] = docs.map((d) => ({
@@ -305,24 +400,49 @@ export function WebReader(): React.JSX.Element {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
-  // Drive the reading-progress bar and highlight the heading currently in view.
+  // Delegated clicks for the copy buttons and section anchors baked into the rendered HTML.
+  const onDocClick = useCallback((e: React.MouseEvent) => {
+    const t = e.target as HTMLElement
+    if (t.classList?.contains('web-codecopy')) {
+      const text = t.parentElement?.querySelector('code')?.textContent ?? ''
+      void navigator.clipboard
+        ?.writeText(text)
+        .then(() => {
+          t.textContent = 'Copied'
+          window.setTimeout(() => {
+            t.textContent = 'Copy'
+          }, 1200)
+        })
+        .catch(() => {})
+    } else if (t.classList?.contains('web-anchor')) {
+      e.stopPropagation()
+      const link = location.origin + location.pathname + '#' + (t.getAttribute('data-anchor') || '')
+      void navigator.clipboard
+        ?.writeText(link)
+        .then(() => {
+          t.classList.add('is-copied')
+          window.setTimeout(() => t.classList.remove('is-copied'), 1000)
+        })
+        .catch(() => {})
+    }
+  }, [])
+
+  // Drive the progress bar, highlight the in-view heading, and remember the scroll position.
   const onMainScroll = useCallback(() => {
     const el = mainRef.current
     if (!el) return
     const max = el.scrollHeight - el.clientHeight
     setProgress(max > 0 ? Math.min(1, el.scrollTop / max) : 0)
-    if (outline.length) {
-      const top = el.getBoundingClientRect().top
-      let current = outline[0].id
-      for (const h of outline) {
-        const node = document.getElementById(h.id)
-        if (!node) continue
-        if (node.getBoundingClientRect().top - top <= 84) current = h.id
-        else break
-      }
-      setActiveHeadingId(current)
+    setActiveHeadingId(activeHeadingFor(el, outline))
+    const name = activeDoc?.name
+    // Only record once the active doc's content is actually live, so a transition
+    // clamp does not overwrite the saved position.
+    if (name && name === renderedDocRef.current) {
+      positionsRef.current[name] = el.scrollTop
+      if (posTimer.current) window.clearTimeout(posTimer.current)
+      posTimer.current = window.setTimeout(persistPositions, 400)
     }
-  }, [outline])
+  }, [outline, activeDoc, persistPositions])
 
   // Save the current document as a self-contained HTML file (math, diagrams, and
   // charts are baked in), reusing the desktop export pipeline.
@@ -360,7 +480,7 @@ export function WebReader(): React.JSX.Element {
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
     >
-      {docs.length > 0 && (
+      {docs.length > 0 && !editing && (
         <div className="web-progress" aria-hidden="true">
           <div className="web-progress-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
@@ -389,6 +509,22 @@ export function WebReader(): React.JSX.Element {
             </button>
           )}
           {activeDoc && (
+            <button
+              type="button"
+              className={'web-btn' + (editing ? ' web-primary' : '')}
+              onClick={() => {
+                if (editing) {
+                  setEditing(false)
+                } else {
+                  setDraft(activeDoc.content)
+                  setEditing(true)
+                }
+              }}
+            >
+              {editing ? 'Done' : 'Edit'}
+            </button>
+          )}
+          {activeDoc && (
             <button type="button" className="web-btn" onClick={() => void downloadHtml()}>
               Download HTML
             </button>
@@ -405,6 +541,15 @@ export function WebReader(): React.JSX.Element {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="web-btn"
+            onClick={() => setShowHelp(true)}
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+          >
+            ?
+          </button>
           <a
             className="web-btn web-ghost"
             href="https://github.com/MalloyTheDev/MD-Reader/releases/latest"
@@ -537,7 +682,11 @@ export function WebReader(): React.JSX.Element {
             )}
           </nav>
         )}
-        <main className="web-main" ref={mainRef} onScroll={onMainScroll}>
+        <main
+          className={'web-main' + (editing ? ' is-editing' : '')}
+          ref={mainRef}
+          onScroll={onMainScroll}
+        >
           {docs.length === 0 ? (
             <div className={'web-empty' + (dragOver ? ' is-drag' : '')}>
               <div className="web-empty-emoji">📖</div>
@@ -555,11 +704,36 @@ export function WebReader(): React.JSX.Element {
               </button>
               <p className="web-hint">or drag and drop files anywhere</p>
             </div>
+          ) : editing ? (
+            <div className="web-edit">
+              <div className="web-edit-note">
+                Edits are saved in your browser only, not the original file. Use Download HTML to
+                export a copy.
+              </div>
+              <div className="web-edit-cols">
+                <textarea
+                  className="web-editor"
+                  value={draft}
+                  spellCheck={false}
+                  onChange={(e) => setDraft(e.target.value)}
+                  aria-label="Markdown source"
+                />
+                <article
+                  className="web-doc markdown-body web-edit-preview"
+                  ref={docRef}
+                  style={{ zoom }}
+                  onClick={onDocClick}
+                >
+                  <div dangerouslySetInnerHTML={{ __html: html }} />
+                </article>
+              </div>
+            </div>
           ) : (
             <article
               className="web-doc markdown-body"
               ref={docRef}
               style={{ maxWidth: WIDTH_PX[width], zoom }}
+              onClick={onDocClick}
             >
               {rendering ? (
                 <p className="web-rendering">Rendering...</p>
@@ -571,7 +745,7 @@ export function WebReader(): React.JSX.Element {
         </main>
       </div>
 
-      {docs.length > 0 && progress > 0.08 && (
+      {docs.length > 0 && !editing && progress > 0.08 && (
         <button
           type="button"
           className="web-totop"
@@ -581,6 +755,35 @@ export function WebReader(): React.JSX.Element {
         >
           ↑
         </button>
+      )}
+
+      {showHelp && (
+        <div
+          className="web-help-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Keyboard shortcuts"
+          onClick={() => setShowHelp(false)}
+        >
+          <div className="web-help" onClick={(e) => e.stopPropagation()}>
+            <h2>Keyboard shortcuts</h2>
+            <dl>
+              <dt>Ctrl / Cmd + K</dt>
+              <dd>Focus search</dd>
+              <dt>Esc</dt>
+              <dd>Clear search or close</dd>
+              <dt>Ctrl / Cmd + [</dt>
+              <dd>Previous document</dd>
+              <dt>Ctrl / Cmd + ]</dt>
+              <dd>Next document</dd>
+              <dt>?</dt>
+              <dd>Toggle this help</dd>
+            </dl>
+            <button type="button" className="web-btn" onClick={() => setShowHelp(false)}>
+              Close
+            </button>
+          </div>
+        </div>
       )}
 
       {dragOver && docs.length > 0 && <div className="web-dropmask">Drop Markdown files to add</div>}
