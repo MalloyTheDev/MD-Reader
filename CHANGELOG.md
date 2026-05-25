@@ -4,6 +4,28 @@ All notable changes to MD Reader. Versions are published as Windows installers o
 [Releases](https://github.com/MalloyTheDev/MD-Reader/releases) page. (Installers are currently
 unsigned - see [Windows install notes](README.md#windows-install-notes).)
 
+## [Unreleased]
+
+### Added
+
+- **Live AI model lists**: the model picker now fetches available models directly from OpenAI and
+  Anthropic (cached, with a Refresh button and an offline fallback), so new models appear without
+  an app update.
+- **Four new AI actions**: _Translate_ (to any language) and _Tone rewrite_ in the Repurpose panel;
+  _Extract action items_ and _Text → Mermaid diagram / table_ in the study assistant.
+
+### Changed
+
+- **Sturdier AI requests**: automatic retry/backoff for OpenAI, SDK-level retries and a larger
+  per-action output budget for Anthropic, adaptive thinking on Claude 4.x, and clearer errors.
+  Anthropic is now pinned to its official host (matching the OpenAI SSRF guard).
+
+### Fixed
+
+- **Reading scroll**: oversized code blocks, equations, and images taller than the page are capped
+  to the page height and scroll internally, so content is never clipped at large font sizes or in
+  single-page mode.
+
 ## [1.4.2] - 2026-05-25
 
 ### Fixed
@@ -68,6 +90,7 @@ A large "power-user" upgrade delivered in 10 audited phases.
   in-document and cross-library search, KaTeX math, Mermaid diagrams, bookmarks, table of contents,
   highlights, and flashcards.
 
+[Unreleased]: https://github.com/MalloyTheDev/MD-Reader/compare/v1.4.2...main
 [1.4.2]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.4.2
 [1.4.1]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.4.1
 [1.4.0]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.4.0

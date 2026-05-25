@@ -39,6 +39,13 @@ const evalJS = (expression) =>
   send('Runtime.evaluate', { expression, returnByValue: true, userGesture: true }).then(
     (r) => r.result?.value
   )
+const evalAwait = (expression) =>
+  send('Runtime.evaluate', {
+    expression,
+    awaitPromise: true,
+    returnByValue: true,
+    userGesture: true
+  }).then((r) => r.result?.value)
 
 async function shot(name) {
   const r = await send('Page.captureScreenshot', { format: 'png' })
@@ -87,6 +94,10 @@ async function main() {
     if (await evalJS(`!!document.querySelector('.reader-content, .markdown-body')`)) break
     await sleep(400)
   }
+  // Configure throwaway keys so the AI panels render their controls for the screenshots.
+  // These are never used for a real request and are cleared at the end.
+  await evalAwait(`window.api.aiSetKey('anthropic','dummy-key-for-screenshots').then(()=>1)`)
+  await evalAwait(`window.api.aiSetKey('openai','dummy-key-for-screenshots').then(()=>1)`)
   await sleep(800)
   await shot('01-reader')
 
@@ -258,6 +269,10 @@ async function main() {
   })()`)
   await sleep(500)
   await shot('16-search-operators')
+
+  // Remove the throwaway keys so no dummy credential is left behind.
+  await evalAwait(`window.api.aiClearKey('anthropic').then(()=>1)`)
+  await evalAwait(`window.api.aiClearKey('openai').then(()=>1)`)
 
   try {
     ws.close()

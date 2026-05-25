@@ -33,6 +33,7 @@ certificate is in place, which removes the prompt.
 - Paginated, book-style reader with optional **two-page spread** and smooth page turns
 - **Table of contents**, reading-progress %, **bookmarks**, and "continue reading"
 - Themes (light / sepia / dark / nord) + deep **typography settings** (font, size, weight, spacing, width, margins, justification) and an optional focus ruler
+- Oversized code blocks, equations, and images **scroll within the page**, so nothing is clipped even at large font sizes
 
 ### Rich Markdown
 
@@ -68,9 +69,12 @@ certificate is in place, which removes the prompt.
 
 ### AI (optional - bring your own key)
 
-- Multi-provider (Anthropic, OpenAI, and OpenAI-compatible / Ollama)
-- Study assistant (chat with a doc or the whole library), repurpose-a-doc, topic → course pack, README-from-source, and auto-organize (title/tags/links)
-- API keys are stored **encrypted at rest** via the OS keychain (`safeStorage`) - never in plaintext
+- Multi-provider (Anthropic, OpenAI, and OpenAI-compatible / Ollama). The **model list is fetched live** from your provider, so new models show up automatically - with a Refresh button and an offline fallback
+- Study assistant (chat with a doc or the whole library) plus one-click actions: **summarize, flashcards, study guide, quiz, key terms, ELI5, critique, extract action items**, and **text → Mermaid diagram or table**
+- Transform a document: **repurpose** (one-pager · blog · exec summary · slides · lesson), **translate** to any language, **rewrite in a chosen tone**, topic → **course pack**, **README-from-source**, and **auto-organize** (title/tags/links)
+- Resilient by design - automatic retry/backoff, adaptive thinking on Claude 4.x - and API keys are stored **encrypted at rest** via the OS keychain (`safeStorage`), never in plaintext
+
+![AI study assistant](docs/screenshots/04-ai-panel.png)
 
 ## Security & privacy
 
