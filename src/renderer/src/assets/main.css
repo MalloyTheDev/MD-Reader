@@ -2874,6 +2874,24 @@ button {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
 }
+.create-sub {
+  margin: 16px 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.create-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.create-chips .sv-text {
+  flex: 1;
+  min-width: 180px;
+}
 .create-card {
   display: flex;
   flex-direction: column;

@@ -70,12 +70,22 @@ export type AiAction =
   | 'courseoutline'
   | 'courselesson'
   | 'readme'
+  | 'translate'
+  | 'tone'
+  | 'tasks'
+  | 'diagram'
 
 /** Target formats for the "Repurpose a document" generative feature. */
 export type RepurposeFormat = 'onepager' | 'blog' | 'exec' | 'slides' | 'lesson'
 
 /** Modes for the editor writing assistant (operates on a text selection). */
 export type WriteMode = 'rewrite' | 'expand' | 'grammar' | 'continue'
+
+/** Target tone for the "Tone & style rewrite" action. */
+export type ToneStyle = 'formal' | 'casual' | 'concise' | 'persuasive'
+
+/** Output kind for the "Text to diagram or table" action. */
+export type DiagramKind = 'mermaid' | 'table'
 
 export interface AiTurn {
   role: 'user' | 'assistant'
@@ -98,6 +108,9 @@ export interface AiRequest {
   titles?: string[]
   repurposeFormat?: RepurposeFormat
   writeMode?: WriteMode
+  language?: string
+  tone?: ToneStyle
+  diagramKind?: DiagramKind
 }
 
 export interface AiUsage {
@@ -258,7 +271,7 @@ export interface MdReaderApi {
   aiStatus(provider: AiProvider): Promise<AiStatus>
   aiSetKey(provider: AiProvider, key: string): Promise<boolean>
   aiClearKey(provider: AiProvider): Promise<void>
-  aiListModels(provider: AiProvider, baseUrl?: string): Promise<string[]>
+  aiListModels(provider: AiProvider, baseUrl?: string, refresh?: boolean): Promise<string[]>
   aiRun(request: AiRequest): Promise<void>
   aiCancel(runId: string): Promise<void>
   onAiEvent(callback: (event: AiEvent) => void): () => void

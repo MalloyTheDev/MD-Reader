@@ -1,8 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import type { AiProvider, RepurposeFormat } from '@shared/types'
+import type { AiProvider, AiRequest, RepurposeFormat, ToneStyle } from '@shared/types'
 import { makeComponents, rehypePlugins, remarkPlugins, urlTransform } from '../lib/markdown'
 import { runAiOnce, type AiOnceHandle } from '../lib/aiClient'
+
+// A generation job: the request fields plus how to present it in the result header.
+type JobReq = Pick<AiRequest, 'action' | 'repurposeFormat' | 'tone' | 'language'>
+interface Job {
+  label: string
+  icon: string
+  req: JobReq
+}
+
+const TONES: { id: ToneStyle; label: string }[] = [
+  { id: 'formal', label: 'Formal' },
+  { id: 'casual', label: 'Casual' },
+  { id: 'concise', label: 'Concise' },
+  { id: 'persuasive', label: 'Persuasive' }
+]
 
 interface Props {
   docContent: string
@@ -49,7 +64,8 @@ export function CreatePanel({
   onClose
 }: Props): React.JSX.Element {
   const [configured, setConfigured] = useState<boolean | null>(null)
-  const [format, setFormat] = useState<RepurposeFormat | null>(null)
+  const [job, setJob] = useState<Job | null>(null)
+  const [language, setLanguage] = useState('')
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,13 +97,13 @@ export function CreatePanel({
     []
   )
 
-  const start = (fmt: RepurposeFormat): void => {
-    setFormat(fmt)
+  const start = (j: Job): void => {
+    setJob(j)
     setOutput('')
     setError(null)
     setRunning(true)
     const handle = runAiOnce(
-      { action: 'repurpose', repurposeFormat: fmt, provider, model, baseUrl, doc: docContent },
+      { ...j.req, provider, model, baseUrl, doc: docContent },
       (full) => setOutput(full)
     )
     handleRef.current = handle
@@ -107,8 +123,7 @@ export function CreatePanel({
     setRunning(false)
   }
 
-  const fmtMeta = FORMATS.find((f) => f.id === format)
-  const suggestedName = `${docTitle || 'Untitled'} - ${fmtMeta?.label ?? 'Repurposed'}`
+  const suggestedName = `${docTitle || 'Untitled'} - ${job?.label ?? 'Result'}`
 
   return (
     <>
@@ -131,7 +146,7 @@ export function CreatePanel({
               Open AI settings
             </button>
           </div>
-        ) : !format ? (
+        ) : !job ? (
           <div className="create-body">
             <p className="sv-hint">
               Turn “{docTitle || 'this document'}” into a new piece. The result opens in a new
@@ -143,7 +158,13 @@ export function CreatePanel({
                   key={f.id}
                   type="button"
                   className="create-card"
-                  onClick={() => start(f.id)}
+                  onClick={() =>
+                    start({
+                      label: f.label,
+                      icon: f.icon,
+                      req: { action: 'repurpose', repurposeFormat: f.id }
+                    })
+                  }
                   disabled={configured === null}
                 >
                   <span className="create-card-icon">{f.icon}</span>
@@ -152,12 +173,59 @@ export function CreatePanel({
                 </button>
               ))}
             </div>
+            <div className="create-sub">Rewrite in a different tone</div>
+            <div className="create-chips">
+              {TONES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="btn btn-small"
+                  disabled={configured === null}
+                  onClick={() =>
+                    start({ label: `${t.label} tone`, icon: '🎭', req: { action: 'tone', tone: t.id } })
+                  }
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="create-sub">Translate</div>
+            <div className="create-chips">
+              <input
+                className="sv-text"
+                placeholder="Language (e.g. Spanish, French, Japanese)"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && language.trim())
+                    start({
+                      label: `Translated to ${language.trim()}`,
+                      icon: '🌐',
+                      req: { action: 'translate', language: language.trim() }
+                    })
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-small"
+                disabled={configured === null || !language.trim()}
+                onClick={() =>
+                  start({
+                    label: `Translated to ${language.trim()}`,
+                    icon: '🌐',
+                    req: { action: 'translate', language: language.trim() }
+                  })
+                }
+              >
+                Translate
+              </button>
+            </div>
           </div>
         ) : (
           <div className="create-body">
             <div className="create-result-head">
               <span className="create-result-title">
-                {fmtMeta?.icon} {fmtMeta?.label}
+                {job?.icon} {job?.label}
               </span>
               {running && <span className="create-status">Generating…</span>}
             </div>
@@ -194,7 +262,11 @@ export function CreatePanel({
                   >
                     Open in editor
                   </button>
-                  <button type="button" className="btn btn-small" onClick={() => start(format)}>
+                  <button
+                    type="button"
+                    className="btn btn-small"
+                    onClick={() => job && start(job)}
+                  >
                     Regenerate
                   </button>
                   <button
@@ -205,7 +277,7 @@ export function CreatePanel({
                   >
                     Copy
                   </button>
-                  <button type="button" className="btn btn-small" onClick={() => setFormat(null)}>
+                  <button type="button" className="btn btn-small" onClick={() => setJob(null)}>
                     Choose another
                   </button>
                 </>

@@ -9,6 +9,13 @@ describe('resolveBaseUrl - provider config + SSRF pin', () => {
     expect(resolveBaseUrl('openai', '')).toBe('https://api.openai.com/v1')
   })
 
+  it('pins Anthropic to the official host and ignores any supplied base URL (SSRF guard)', () => {
+    expect(resolveBaseUrl('anthropic')).toBe('https://api.anthropic.com/v1')
+    expect(resolveBaseUrl('anthropic', 'http://evil.example.com/v1')).toBe(
+      'https://api.anthropic.com/v1'
+    )
+  })
+
   it('defaults Ollama to localhost when no base URL is given', () => {
     expect(resolveBaseUrl('ollama')).toBe('http://localhost:11434/v1')
     expect(resolveBaseUrl('ollama', '')).toBe('http://localhost:11434/v1')

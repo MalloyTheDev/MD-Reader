@@ -137,6 +137,7 @@ function AiSettings({
   const needsUrl = provider === 'ollama' || provider === 'custom'
   const [configured, setConfigured] = useState(false)
   const [models, setModels] = useState<string[]>([])
+  const [modelsLoading, setModelsLoading] = useState(false)
   const [keyInput, setKeyInput] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -145,16 +146,32 @@ function AiSettings({
     void window.api.aiStatus(provider).then((s) => {
       if (!cancelled) setConfigured(s.configured)
     })
+    setModelsLoading(true)
     void window.api
       .aiListModels(provider, settings.aiBaseUrl)
       .then((m) => {
         if (!cancelled) setModels(m)
       })
       .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setModelsLoading(false)
+      })
     return () => {
       cancelled = true
     }
   }, [provider, settings.aiBaseUrl])
+
+  // Re-query the provider for its current model list (live; bypasses the session cache).
+  const refreshModels = async (): Promise<void> => {
+    setModelsLoading(true)
+    try {
+      setModels(await window.api.aiListModels(provider, settings.aiBaseUrl, true))
+    } catch {
+      /* keep the current list */
+    } finally {
+      setModelsLoading(false)
+    }
+  }
 
   const refresh = async (): Promise<void> => {
     setConfigured((await window.api.aiStatus(provider)).configured)
@@ -166,10 +183,12 @@ function AiSettings({
     setKeyInput('')
     setBusy(false)
     await refresh()
+    await refreshModels() // a saved key can unlock the live model list
   }
   const removeKey = async (): Promise<void> => {
     await window.api.aiClearKey(provider)
     await refresh()
+    await refreshModels()
   }
 
   return (
@@ -237,7 +256,7 @@ function AiSettings({
               value={models.includes(settings.aiModel) ? settings.aiModel : ''}
               onChange={(e) => e.target.value && onChange({ aiModel: e.target.value })}
             >
-              <option value="">{provider === 'ollama' ? '- installed -' : '- presets -'}</option>
+              <option value="">{provider === 'ollama' ? '- installed -' : '- models -'}</option>
               {models.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -252,6 +271,15 @@ function AiSettings({
             onChange={(e) => onChange({ aiModel: e.target.value })}
             spellCheck={false}
           />
+          <button
+            type="button"
+            className="btn btn-small"
+            onClick={() => void refreshModels()}
+            disabled={modelsLoading}
+            title="Refresh the model list from the provider"
+          >
+            {modelsLoading ? '…' : '↻'}
+          </button>
         </div>
       </div>
       <p className="sv-hint">

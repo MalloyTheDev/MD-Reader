@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import type { AiAction, AiEvent, AiProvider, AiStatus, AiTurn, AiUsage } from '@shared/types'
+import type {
+  AiAction,
+  AiEvent,
+  AiProvider,
+  AiStatus,
+  AiTurn,
+  AiUsage,
+  DiagramKind
+} from '@shared/types'
 import { makeComponents, rehypePlugins, remarkPlugins, urlTransform } from '../lib/markdown'
 
 function uid(): string {
@@ -42,7 +50,8 @@ function strictInstruction(
   action: AiAction,
   question: string,
   selection: string,
-  titles: string[]
+  titles: string[],
+  diagramKind?: DiagramKind
 ): string {
   switch (action) {
     case 'summarize':
@@ -63,12 +72,23 @@ function strictInstruction(
       return 'Explain the document above simply, as if to a curious beginner (ELI5). Use short paragraphs, plain language, and a helpful analogy where it fits.'
     case 'critique':
       return 'Critically analyze the document above. Cover its key claims, possible weaknesses or counter-arguments, and open questions. Use Markdown bullet points grouped under short headings.'
+    case 'tasks':
+      return 'Extract every action item, task, decision, and follow-up from the document above. Return a Markdown checklist using "- [ ] " for each open item, grouped under short "## " headings (for example Action items, Decisions, Open questions) where it helps. If there are none, say so briefly.'
+    case 'diagram':
+      return diagramKind === 'table'
+        ? 'Turn the key information in the document above into a clear Markdown table. Choose sensible columns, include a header row, and keep cells concise. Output only the table.'
+        : 'Create a Mermaid diagram capturing the main structure or flow in the document above. Pick the most fitting diagram type (flowchart, sequence, etc.). Output ONLY a single fenced ```mermaid code block - no prose.'
     default:
       return question
   }
 }
 
-function friendlyLabel(action: AiAction, question: string, selection: string): string {
+function friendlyLabel(
+  action: AiAction,
+  question: string,
+  selection: string,
+  diagramKind?: DiagramKind
+): string {
   switch (action) {
     case 'summarize':
       return 'Summarize this document'
@@ -88,6 +108,10 @@ function friendlyLabel(action: AiAction, question: string, selection: string): s
       return 'Explain simply (ELI5)'
     case 'critique':
       return 'Critique & counter-points'
+    case 'tasks':
+      return 'Extract action items'
+    case 'diagram':
+      return diagramKind === 'table' ? 'Make a table' : 'Make a diagram'
     default:
       return question
   }
@@ -102,7 +126,9 @@ const ONE_SHOT: AiAction[] = [
   'suggestlinks',
   'keyterms',
   'eli5',
-  'critique'
+  'critique',
+  'tasks',
+  'diagram'
 ]
 
 interface Props {
@@ -199,7 +225,7 @@ export function AiPanel({
     []
   )
 
-  const run = (action: AiAction, explicitSelection?: string): void => {
+  const run = (action: AiAction, explicitSelection?: string, diagramKind?: DiagramKind): void => {
     const selection = action === 'explain' ? (explicitSelection ?? getSelection()) : ''
     if (action === 'explain' && !selection.trim()) {
       setError('Select some text in the page first, then click Explain.')
@@ -209,8 +235,8 @@ export function AiPanel({
       setError('Type a question first.')
       return
     }
-    const userText = friendlyLabel(action, question, selection)
-    const realText = strictInstruction(action, question, selection, libraryTitles)
+    const userText = friendlyLabel(action, question, selection, diagramKind)
+    const realText = strictInstruction(action, question, selection, libraryTitles, diagramKind)
     const priorTurns = ONE_SHOT.includes(action) ? [] : turns
     const history: AiTurn[] = [
       ...priorTurns.map((t) => ({ role: t.role, text: t.text })),
@@ -239,7 +265,8 @@ export function AiPanel({
       question,
       selection,
       history,
-      context
+      context,
+      diagramKind
     })
   }
 
@@ -412,6 +439,30 @@ export function AiPanel({
                 onClick={() => run('critique')}
               >
                 Critique
+              </button>
+              <button
+                type="button"
+                className="btn btn-small"
+                disabled={running}
+                onClick={() => run('tasks')}
+              >
+                Action items
+              </button>
+              <button
+                type="button"
+                className="btn btn-small"
+                disabled={running}
+                onClick={() => run('diagram', undefined, 'mermaid')}
+              >
+                Diagram
+              </button>
+              <button
+                type="button"
+                className="btn btn-small"
+                disabled={running}
+                onClick={() => run('diagram', undefined, 'table')}
+              >
+                Table
               </button>
               {turns.length > 0 && (
                 <button type="button" className="btn btn-small" onClick={clear}>

@@ -9,6 +9,8 @@ import type { AiProvider } from './types'
 export function resolveBaseUrl(provider: AiProvider, given?: string): string {
   const trimmed = (given ?? '').trim().replace(/\/$/, '')
   if (provider === 'openai') return 'https://api.openai.com/v1'
+  // Anthropic is likewise pinned to its official host, so the key is never sent elsewhere.
+  if (provider === 'anthropic') return 'https://api.anthropic.com/v1'
   if (provider === 'ollama') return trimmed || 'http://localhost:11434/v1'
   return trimmed // custom: caller-supplied (empty string if not provided)
 }

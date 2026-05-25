@@ -72,8 +72,8 @@ const api: MdReaderApi = {
   aiSetKey: (provider: AiProvider, key: string): Promise<boolean> =>
     ipcRenderer.invoke('ai:setKey', provider, key),
   aiClearKey: (provider: AiProvider): Promise<void> => ipcRenderer.invoke('ai:clearKey', provider),
-  aiListModels: (provider: AiProvider, baseUrl?: string): Promise<string[]> =>
-    ipcRenderer.invoke('ai:listModels', provider, baseUrl),
+  aiListModels: (provider: AiProvider, baseUrl?: string, refresh?: boolean): Promise<string[]> =>
+    ipcRenderer.invoke('ai:listModels', provider, baseUrl, refresh),
   aiRun: (request: AiRequest): Promise<void> => ipcRenderer.invoke('ai:run', request),
   aiCancel: (runId: string): Promise<void> => ipcRenderer.invoke('ai:cancel', runId),
   onAiEvent: (callback: (event: AiEvent) => void): (() => void) => {

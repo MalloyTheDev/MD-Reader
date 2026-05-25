@@ -3,15 +3,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import * as store from './store'
 import type { AiProvider, AiRequest, AiUsage, RepurposeFormat, WriteMode } from '../shared/types'
 import { resolveBaseUrl } from '../shared/ai-endpoints'
+import { FALLBACK_MODELS, parseOpenAiModels, parseAnthropicModels } from '../shared/ai-models'
 
 const MAX_DOC_CHARS = 600_000
 
-const PRESET_MODELS: Record<AiProvider, string[]> = {
-  anthropic: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'o4-mini'],
-  ollama: [],
-  custom: []
-}
+// Live model lists are cached per provider for the session; cleared when the key changes.
+const modelCache = new Map<AiProvider, string[]>()
 
 // $/1M tokens (input, output). Only used where we know the rates; others show tokens only.
 const PRICING: Record<string, [number, number]> = {
@@ -36,6 +33,7 @@ function encryptionAvailable(): boolean {
 }
 
 async function setKey(provider: AiProvider, plain: string): Promise<void> {
+  modelCache.delete(provider) // a new key may unlock a different set of models
   if (!plain) {
     await store.setAiKeyBlob(provider, null)
     return
@@ -96,6 +94,16 @@ function instructionFor(req: AiRequest): string {
       return `Write a clear, self-contained lesson for a self-study course on "${req.question ?? ''}". The lesson to write is: ${req.selection ?? ''}\n\nUse Markdown: start with a single "# " heading for the lesson title, then short explanatory sections, concrete examples, and end with a brief "## Key points" bullet list. Do not include quiz questions.`
     case 'readme':
       return 'You are writing a README.md for the software project whose source code is provided above. Study the code, dependencies, and structure, then produce a complete, professional README in Markdown with: a project title and one-line description, a short overview, key features (bullets), tech stack, installation steps, usage examples, an overview of the project structure, and a License section. Infer details from the actual code; do not invent features that are not present. Output only the README Markdown.'
+    case 'translate':
+      return `Translate the document above into ${req.language || 'English'}. Preserve all Markdown structure and formatting; translate prose and headings, but leave code blocks, URLs, and technical identifiers unchanged. Output only the translated Markdown - no preamble.`
+    case 'tone':
+      return `Rewrite the document above in a ${req.tone ?? 'clear'} tone, preserving its meaning and Markdown formatting. Return only the rewritten Markdown - no preamble or explanation.`
+    case 'tasks':
+      return 'Extract every action item, task, decision, and follow-up from the document above. Return a Markdown checklist using "- [ ] " for each open item, grouped under short "## " headings (for example Action items, Decisions, Open questions) where it helps. If there are none, say so briefly.'
+    case 'diagram':
+      return req.diagramKind === 'table'
+        ? 'Turn the key information in the document above into a clear Markdown table. Choose sensible columns, include a header row, and keep cells concise. Output only the table.'
+        : 'Create a Mermaid diagram capturing the main structure or flow in the document above. Pick the most fitting diagram type (flowchart, sequence, etc.). Output ONLY a single fenced ```mermaid code block - no prose.'
   }
 }
 
@@ -137,7 +145,9 @@ function friendlyError(err: unknown): string {
   if (status === 401 || status === 403)
     return 'Your API key was rejected. Check that it is valid and has access.'
   if (status === 429) return 'Rate limited - wait a moment and try again.'
-  if (status === 500 || status === 529)
+  if (status === 400 || status === 404)
+    return 'That model may be unavailable for your key. Pick another model and try again.'
+  if (status === 500 || status === 502 || status === 503 || status === 529)
     return 'The provider had a service issue - please try again.'
   const msg = err instanceof Error ? err.message : String(err)
   if (/fetch failed|ECONNREFUSED|ENOTFOUND/i.test(msg))
@@ -149,6 +159,52 @@ interface SendEvent {
   (ev: { runId: string; kind: string; text?: string; error?: string; usage?: AiUsage }): void
 }
 
+// Long-form actions get a larger output budget so they are not truncated mid-answer.
+const LONG_ACTIONS: ReadonlySet<AiRequest['action']> = new Set([
+  'readme',
+  'courselesson',
+  'courseoutline',
+  'repurpose',
+  'studyguide',
+  'quiz',
+  'critique',
+  'translate',
+  'tone'
+])
+function maxTokensFor(action: AiRequest['action']): number {
+  return LONG_ACTIONS.has(action) ? 8192 : 4096
+}
+
+// Adaptive thinking is supported on Claude 4.x and improves answer quality; older or unknown
+// models omit it so we never send an unsupported parameter.
+function claudeSupportsAdaptiveThinking(model: string): boolean {
+  return /claude-(opus|sonnet|haiku)-[4-9]/i.test(model)
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 529])
+
+// Retry the initial request on transient failures (network blip / rate limit / 5xx) with backoff.
+// Used only before streaming begins; a mid-stream failure is surfaced as an error.
+async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Promise<Response> {
+  let lastErr: unknown
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, init)
+      if (RETRYABLE_STATUS.has(res.status) && attempt < retries) {
+        await sleep(400 * (attempt + 1))
+        continue
+      }
+      return res
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') throw e // user cancelled
+      lastErr = e
+      if (attempt >= retries) throw lastErr
+      await sleep(400 * (attempt + 1))
+    }
+  }
+}
+
 function buildConvo(req: AiRequest): { role: 'user' | 'assistant'; content: string }[] {
   return req.history && req.history.length > 0
     ? req.history.map((t) => ({ role: t.role, content: t.text }))
@@ -157,7 +213,7 @@ function buildConvo(req: AiRequest): { role: 'user' | 'assistant'; content: stri
 
 async function runAnthropic(req: AiRequest, send: SendEvent, key: string): Promise<void> {
   const corpus = (req.action === 'library' ? (req.context ?? '') : req.doc).slice(0, MAX_DOC_CHARS)
-  const client = new Anthropic({ apiKey: key })
+  const client = new Anthropic({ apiKey: key, maxRetries: 2 })
   // Topic-based actions (e.g. course generation) have no source doc - skip the cached
   // source block entirely so we don't send an empty text block to the API.
   const sourceFraming = corpus.trim()
@@ -177,9 +233,10 @@ async function runAnthropic(req: AiRequest, send: SendEvent, key: string): Promi
     : []
   const stream = client.messages.stream({
     model: req.model,
-    max_tokens: 4096,
+    max_tokens: maxTokensFor(req.action),
     system: SYSTEM_PROMPT,
-    messages: [...sourceFraming, ...buildConvo(req)]
+    messages: [...sourceFraming, ...buildConvo(req)],
+    ...(claudeSupportsAdaptiveThinking(req.model) ? { thinking: { type: 'adaptive' as const } } : {})
   })
   active.set(req.runId, { abort: () => stream.abort() })
   stream.on('text', (t: string) => send({ runId: req.runId, kind: 'chunk', text: t }))
@@ -224,7 +281,7 @@ async function runOpenAICompatible(req: AiRequest, send: SendEvent, key: string)
   active.set(req.runId, { abort: () => controller.abort() })
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (key) headers['Authorization'] = `Bearer ${key}`
-  const res = await fetch(`${base}/chat/completions`, {
+  const res = await fetchWithRetry(`${base}/chat/completions`, {
     method: 'POST',
     headers,
     signal: controller.signal,
@@ -292,17 +349,61 @@ async function runOpenAICompatible(req: AiRequest, send: SendEvent, key: string)
   })
 }
 
-async function listModels(provider: AiProvider, baseUrl?: string): Promise<string[]> {
-  if (provider !== 'ollama') return PRESET_MODELS[provider]
+async function fetchOpenAiModels(key: string): Promise<string[]> {
+  const res = await fetch(`${baseUrlFor('openai')}/models`, {
+    headers: { Authorization: `Bearer ${key}` },
+    redirect: 'manual'
+  })
+  if (!res.ok) return []
+  return parseOpenAiModels(await res.json())
+}
+
+async function fetchAnthropicModels(key: string): Promise<string[]> {
+  const res = await fetch(`${baseUrlFor('anthropic')}/models?limit=1000`, {
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    redirect: 'manual'
+  })
+  if (!res.ok) return []
+  return parseAnthropicModels(await res.json())
+}
+
+// Live model list per provider. Ollama is queried locally; OpenAI/Anthropic hit their pinned
+// /models endpoints (key stays main-side) and cache the result; custom uses the fallback.
+// Any failure or missing key returns the offline fallback so the picker is never empty.
+async function listModels(
+  provider: AiProvider,
+  baseUrl?: string,
+  refresh = false
+): Promise<string[]> {
+  if (provider === 'ollama') {
+    try {
+      const root = baseUrlFor('ollama', baseUrl).replace(/\/v1$/, '')
+      const res = await fetch(`${root}/api/tags`)
+      if (!res.ok) return []
+      const json = await res.json()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return Array.isArray(json?.models) ? json.models.map((m: any) => m.name as string) : []
+    } catch {
+      return []
+    }
+  }
+  if (provider === 'custom') return FALLBACK_MODELS.custom
+  if (!refresh) {
+    const cached = modelCache.get(provider)
+    if (cached && cached.length) return cached
+  }
+  const key = await getKey(provider)
+  if (!key) return FALLBACK_MODELS[provider]
   try {
-    const root = baseUrlFor('ollama', baseUrl).replace(/\/v1$/, '')
-    const res = await fetch(`${root}/api/tags`)
-    if (!res.ok) return []
-    const json = await res.json()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return Array.isArray(json?.models) ? json.models.map((m: any) => m.name as string) : []
+    const live =
+      provider === 'openai' ? await fetchOpenAiModels(key) : await fetchAnthropicModels(key)
+    if (live.length) {
+      modelCache.set(provider, live)
+      return live
+    }
+    return FALLBACK_MODELS[provider]
   } catch {
-    return []
+    return FALLBACK_MODELS[provider]
   }
 }
 
@@ -322,11 +423,12 @@ export function registerAiIpc(): void {
   })
 
   ipcMain.handle('ai:clearKey', async (_e, provider: AiProvider) => {
+    modelCache.delete(provider)
     await store.setAiKeyBlob(provider, null)
   })
 
-  ipcMain.handle('ai:listModels', (_e, provider: AiProvider, baseUrl?: string) =>
-    listModels(provider, baseUrl)
+  ipcMain.handle('ai:listModels', (_e, provider: AiProvider, baseUrl?: string, refresh?: boolean) =>
+    listModels(provider, baseUrl, refresh)
   )
 
   ipcMain.handle('ai:cancel', (_e, runId: string) => {
