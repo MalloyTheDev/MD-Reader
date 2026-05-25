@@ -4,7 +4,7 @@ All notable changes to MD Reader. Versions are published as Windows installers o
 [Releases](https://github.com/MalloyTheDev/MD-Reader/releases) page. (Installers are currently
 unsigned - see [Windows install notes](README.md#windows-install-notes).)
 
-## [Unreleased]
+## [1.5.0] - 2026-05-25
 
 ### Added
 
@@ -90,7 +90,7 @@ A large "power-user" upgrade delivered in 10 audited phases.
   in-document and cross-library search, KaTeX math, Mermaid diagrams, bookmarks, table of contents,
   highlights, and flashcards.
 
-[Unreleased]: https://github.com/MalloyTheDev/MD-Reader/compare/v1.4.2...main
+[1.5.0]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.5.0
 [1.4.2]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.4.2
 [1.4.1]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.4.1
 [1.4.0]: https://github.com/MalloyTheDev/MD-Reader/releases/tag/v1.4.0

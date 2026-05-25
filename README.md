@@ -10,7 +10,7 @@ A fast, private, offline-first **Markdown reader, library, and editor** for Wind
 
 Grab the latest Windows installer from the [**Releases**](https://github.com/MalloyTheDev/MD-Reader/releases) page:
 
-- **[md-reader-1.4.2-setup.exe](https://github.com/MalloyTheDev/MD-Reader/releases/latest)** - current release
+- **[md-reader-1.5.0-setup.exe](https://github.com/MalloyTheDev/MD-Reader/releases/latest)** - current release
 
 Then launch **MD Reader** and point it at any folder of `.md` files, or use the built-in vault. See [Windows install notes](#windows-install-notes) below.
 
