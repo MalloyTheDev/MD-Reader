@@ -1,0 +1,13 @@
+{
+  "name": "MD Reader",
+  "short_name": "MD Reader",
+  "description": "Read Markdown with math, diagrams, and charts in your browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#15110d",
+  "theme_color": "#2ecc71",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
