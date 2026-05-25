@@ -66,8 +66,12 @@ export function WebReader(): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [outline, setOutline] = useState<Heading[]>([])
   const [dragOver, setDragOver] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [activeHeadingId, setActiveHeadingId] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
   const docRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
+  const searchInput = useRef<HTMLInputElement>(null)
 
   const activeDoc = docs[active]
 
@@ -139,7 +143,36 @@ export function WebReader(): React.JSX.Element {
       items.push({ id, text, level: Number(el.tagName.slice(1)) })
     })
     setOutline(items)
+    setActiveHeadingId((prev) => (items.some((i) => i.id === prev) ? prev : items[0]?.id ?? ''))
   }, [html])
+
+  // Reset scroll position and progress when switching documents.
+  useEffect(() => {
+    setProgress(0)
+    mainRef.current?.scrollTo({ top: 0 })
+  }, [active])
+
+  // Reader keyboard shortcuts: focus search, clear search, and move between docs.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const mod = e.ctrlKey || e.metaKey
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        searchInput.current?.focus()
+        searchInput.current?.select()
+      } else if (e.key === 'Escape' && (query || document.activeElement === searchInput.current)) {
+        setQuery('')
+        searchInput.current?.blur()
+      } else if (mod && (e.key === '[' || e.key === ']') && docs.length > 1) {
+        e.preventDefault()
+        const dir = e.key === ']' ? 1 : -1
+        setActive((a) => Math.max(0, Math.min(docs.length - 1, a + dir)))
+        setQuery('')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [docs.length, query])
 
   const searchIndex = useMemo(() => {
     const files: MarkdownFileContent[] = docs.map((d) => ({
@@ -233,7 +266,6 @@ export function WebReader(): React.JSX.Element {
       if (i >= 0) {
         setActive(i)
         setQuery('')
-        docRef.current?.parentElement?.scrollTo({ top: 0 })
       }
     },
     [docs]
@@ -242,6 +274,25 @@ export function WebReader(): React.JSX.Element {
   const scrollToHeading = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
+
+  // Drive the reading-progress bar and highlight the heading currently in view.
+  const onMainScroll = useCallback(() => {
+    const el = mainRef.current
+    if (!el) return
+    const max = el.scrollHeight - el.clientHeight
+    setProgress(max > 0 ? Math.min(1, el.scrollTop / max) : 0)
+    if (outline.length) {
+      const top = el.getBoundingClientRect().top
+      let current = outline[0].id
+      for (const h of outline) {
+        const node = document.getElementById(h.id)
+        if (!node) continue
+        if (node.getBoundingClientRect().top - top <= 84) current = h.id
+        else break
+      }
+      setActiveHeadingId(current)
+    }
+  }, [outline])
 
   // Save the current document as a self-contained HTML file (math, diagrams, and
   // charts are baked in), reusing the desktop export pipeline.
@@ -279,6 +330,11 @@ export function WebReader(): React.JSX.Element {
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
     >
+      {docs.length > 0 && (
+        <div className="web-progress" aria-hidden="true">
+          <div className="web-progress-fill" style={{ width: `${Math.round(progress * 100)}%` }} />
+        </div>
+      )}
       <header className="web-header">
         <span className="web-brand">
           📖 MD Reader <span className="web-tag">web</span>
@@ -340,6 +396,7 @@ export function WebReader(): React.JSX.Element {
         {docs.length > 0 && (
           <nav className="web-sidebar" aria-label="Documents and search">
             <input
+              ref={searchInput}
               className="web-search"
               type="search"
               placeholder="Search all docs (tag:, has:math, ...)"
@@ -399,7 +456,11 @@ export function WebReader(): React.JSX.Element {
                       <button
                         key={h.id}
                         type="button"
-                        className={'web-outline web-outline-' + h.level}
+                        className={
+                          'web-outline web-outline-' +
+                          h.level +
+                          (h.id === activeHeadingId ? ' is-active' : '')
+                        }
                         onClick={() => scrollToHeading(h.id)}
                         title={h.text}
                       >
@@ -412,7 +473,7 @@ export function WebReader(): React.JSX.Element {
             )}
           </nav>
         )}
-        <main className="web-main">
+        <main className="web-main" ref={mainRef} onScroll={onMainScroll}>
           {docs.length === 0 ? (
             <div className={'web-empty' + (dragOver ? ' is-drag' : '')}>
               <div className="web-empty-emoji">📖</div>
