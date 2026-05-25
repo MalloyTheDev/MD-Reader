@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { renderBodyHtml } from '../renderer/src/lib/export'
+import { renderBodyHtml, renderDocHtml } from '../renderer/src/lib/export'
 import { buildIndex, runLibrarySearch } from '../renderer/src/lib/search'
 import { computeDocStats } from '../renderer/src/lib/docinfo'
 import type { MarkdownFileContent } from '../shared/types'
@@ -243,6 +243,20 @@ export function WebReader(): React.JSX.Element {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
+  // Save the current document as a self-contained HTML file (math, diagrams, and
+  // charts are baked in), reusing the desktop export pipeline.
+  const downloadHtml = useCallback(async () => {
+    if (!activeDoc) return
+    const title = activeDoc.name.replace(MD_RE, '')
+    const full = await renderDocHtml(activeDoc.content, title, theme)
+    const url = URL.createObjectURL(new Blob([full], { type: 'text/html' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = title + '.html'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [activeDoc, theme])
+
   const closeDoc = useCallback(
     (name: string, e: React.MouseEvent) => {
       e.stopPropagation()
@@ -286,6 +300,11 @@ export function WebReader(): React.JSX.Element {
           {hasDirPicker && (
             <button type="button" className="web-btn" onClick={() => void openFolder()}>
               Open folder
+            </button>
+          )}
+          {activeDoc && (
+            <button type="button" className="web-btn" onClick={() => void downloadHtml()}>
+              Download HTML
             </button>
           )}
           <select
