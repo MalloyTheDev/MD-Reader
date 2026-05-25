@@ -2,6 +2,8 @@
 
 A fast, private, offline-first **Markdown reader, library, and editor** for Windows — built for real technical, scientific, and study work. Render math, diagrams, and charts beautifully; organize a whole vault of notes; and (optionally) bring your own AI key for a study assistant — all in a secure Electron desktop app.
 
+**[🌐 Website](https://malloythedev.github.io/MD-Reader/) · [⬇ Download](https://github.com/MalloyTheDev/MD-Reader/releases/latest) · [📜 Changelog](CHANGELOG.md)**
+
 ![Library](docs/screenshots/08-library.png)
 
 ## Download
