@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="200" viewBox="0 0 520 200" role="img" aria-label="Folder to bookshelf to reader diagram">
+  <rect width="520" height="200" rx="12" fill="#eef2f7"/>
+  <g font-family="Segoe UI, sans-serif" font-size="14" text-anchor="middle">
+    <rect x="24" y="70" width="120" height="60" rx="8" fill="#9a5b22"/>
+    <text x="84" y="105" fill="#fff" font-weight="700">Folder of .md</text>
+
+    <rect x="200" y="70" width="120" height="60" rx="8" fill="#1f6feb"/>
+    <text x="260" y="105" fill="#fff" font-weight="700">Bookshelf</text>
+
+    <rect x="376" y="70" width="120" height="60" rx="8" fill="#2e7d32"/>
+    <text x="436" y="105" fill="#fff" font-weight="700">Reader</text>
+
+    <path d="M150 100 L194 100" stroke="#5b6b7b" stroke-width="3" marker-end="url(#a)"/>
+    <path d="M326 100 L370 100" stroke="#5b6b7b" stroke-width="3" marker-end="url(#a)"/>
+  </g>
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 L6 3 L0 6 z" fill="#5b6b7b"/>
+    </marker>
+  </defs>
+</svg>

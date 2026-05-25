@@ -1,0 +1,80 @@
+appId: com.mdreader.app
+productName: MD Reader
+# Ship the app as a plain folder rather than an asar archive. Electron 39 + electron-builder
+# enable embedded asar-integrity validation by default, which was aborting the packaged exe
+# before any app code ran. Loading from a folder (identical to a dev run) sidesteps that.
+asar: false
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asarUnpack:
+  - resources/**
+win:
+  executableName: md-reader
+  # --- Code signing (see SIGNING.md) ---
+  # Unsigned by default. To sign, pick ONE option:
+  #
+  # A) Traditional cert (.pfx / cloud HSM via signtool): set env vars before `npm run build:win`:
+  #      CSC_LINK=path-or-base64-of-cert   CSC_KEY_PASSWORD=your-password
+  #    electron-builder auto-detects these and signs — no change needed here.
+  #
+  # B) Azure Trusted Signing (recommended for new 1-year certs): uncomment and fill in,
+  #    then set AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET env vars.
+  # azureSignOptions:
+  #   publisherName: "Your Name or Org"
+  #   endpoint: "https://wus2.codesigning.azure.net/"
+  #   certificateProfileName: "your-profile"
+  #   codeSigningAccountName: "your-account"
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: ${name}-${version}.${ext}
+# Register MD Reader as a handler for Markdown files (Open with… / double-click).
+fileAssociations:
+  - ext: md
+    name: Markdown Document
+    description: Markdown Document
+    role: Editor
+  - ext: markdown
+    name: Markdown Document
+    description: Markdown Document
+    role: Editor
+  - ext: mdown
+    name: Markdown Document
+    role: Editor
+  - ext: mkd
+    name: Markdown Document
+    role: Editor
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://example.com/auto-updates

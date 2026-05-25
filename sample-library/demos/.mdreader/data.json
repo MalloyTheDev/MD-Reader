@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "files": {
+    "slides-and-tasks.md": {
+      "position": {
+        "page": 1,
+        "anchorId": "task-list",
+        "progress": 1,
+        "updatedAt": 1779728141416
+      }
+    },
+    "math.md": {
+      "position": {
+        "page": 1,
+        "anchorId": "a-numbered-identity",
+        "progress": 1,
+        "updatedAt": 1779729954346
+      }
+    },
+    "rich-content.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "a-diagram",
+        "progress": 0.5,
+        "updatedAt": 1779697945356
+      }
+    },
+    "Untitled.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "untitled",
+        "progress": 1,
+        "updatedAt": 1779694295700
+      }
+    },
+    "science-showcase.md": {
+      "position": {
+        "page": 1,
+        "anchorId": "quantum-mechanics-dirac-notation-operators-schrödinger",
+        "progress": 0.5,
+        "updatedAt": 1779697898711
+      }
+    },
+    "diagrams-showcase.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "sequence-diagram",
+        "progress": 0.25,
+        "updatedAt": 1779701304631
+      }
+    },
+    "media-showcase.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "drag--drop",
+        "progress": 0.5,
+        "updatedAt": 1779702402951
+      }
+    },
+    "charts-showcase.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "charts-showcase",
+        "progress": 0.125,
+        "updatedAt": 1779729958341
+      }
+    },
+    "tables-callouts-showcase.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "rich-callout-types",
+        "progress": 0.2,
+        "updatedAt": 1779729960993
+      }
+    }
+  }
+}

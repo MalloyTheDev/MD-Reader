@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "files": {
+    "chapter-1.md": {
+      "annotations": [
+        {
+          "id": "52ae3a09-5330-4940-92e9-b58752e66728",
+          "start": 0,
+          "end": 20,
+          "color": "yellow",
+          "text": "Chapter 1: Getting C",
+          "createdAt": 1779670393920,
+          "note": "Why does this matter?",
+          "card": {
+            "question": "Why does this matter?",
+            "ease": 2.5,
+            "intervalDays": 0,
+            "due": 1779670395167,
+            "reps": 0
+          }
+        }
+      ],
+      "position": {
+        "page": 0,
+        "anchorId": "the-reading-surface",
+        "progress": 0.3333333333333333,
+        "updatedAt": 1779683319094
+      }
+    },
+    "demos/rich-content.md": {
+      "bookmarks": [
+        {
+          "id": "e0de4faf-1cc0-4513-a467-a7e8aa35ee8b",
+          "anchorId": "images-zoom",
+          "page": 0,
+          "label": "Images zoom",
+          "createdAt": 1779668008623
+        }
+      ],
+      "position": {
+        "page": 0,
+        "anchorId": "a-diagram",
+        "progress": 0.25,
+        "updatedAt": 1779672522728
+      }
+    },
+    "README.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "formatting-it-understands",
+        "progress": 0.3333333333333333,
+        "updatedAt": 1779683380554
+      }
+    },
+    "chapter-2.md": {
+      "position": {
+        "page": 0,
+        "anchorId": "counting-the-pages",
+        "progress": 0.5,
+        "updatedAt": 1779683273940
+      }
+    }
+  }
+}
