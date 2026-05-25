@@ -282,6 +282,67 @@ body {
   transition: width 0.1s linear;
 }
 
+.web-display {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 6px 6px;
+}
+.web-segmented,
+.web-textsize {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.web-seg {
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  text-transform: capitalize;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #333);
+  background: var(--surface, #241d16);
+  color: var(--fg, #eae3d6);
+  cursor: pointer;
+}
+.web-seg:hover {
+  border-color: var(--accent, #2ecc71);
+}
+.web-seg.is-active {
+  background: var(--accent-soft, rgba(46, 204, 113, 0.16));
+  border-color: var(--accent, #2ecc71);
+  color: var(--accent, #2ecc71);
+  font-weight: 600;
+}
+.web-textsize-val {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--fg-muted, #9a8f7d);
+}
+
+.web-totop {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border, #333);
+  background: var(--surface, #241d16);
+  color: var(--fg, #eae3d6);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 40;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.web-totop:hover {
+  border-color: var(--accent, #2ecc71);
+  color: var(--accent, #2ecc71);
+}
+
 .web-main {
   flex: 1;
   overflow-y: auto;
@@ -346,6 +407,7 @@ body {
   .web-header,
   .web-sidebar,
   .web-progress,
+  .web-totop,
   .web-dropmask {
     display: none !important;
   }

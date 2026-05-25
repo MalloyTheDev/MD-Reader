@@ -20,6 +20,14 @@ type Theme = (typeof THEMES)[number]
 const MD_RE = /\.(md|markdown|mdown|mkd|mdx|txt)$/i
 const DOCS_KEY = 'mdreader-web-docs'
 const THEME_KEY = 'mdreader-web-theme'
+const WIDTH_KEY = 'mdreader-web-width'
+const ZOOM_KEY = 'mdreader-web-zoom'
+
+const WIDTHS = ['narrow', 'normal', 'wide'] as const
+type Width = (typeof WIDTHS)[number]
+const WIDTH_PX: Record<Width, number> = { narrow: 640, normal: 820, wide: 1040 }
+const MIN_ZOOM = 0.8
+const MAX_ZOOM = 1.6
 
 // Minimal File System Access typings (Chromium-only; feature-detected before use).
 interface FsHandle {
@@ -57,6 +65,16 @@ function loadTheme(): Theme {
   return (THEMES as readonly string[]).includes(t) ? (t as Theme) : 'sepia'
 }
 
+function loadWidth(): Width {
+  const w = (typeof localStorage !== 'undefined' && localStorage.getItem(WIDTH_KEY)) || ''
+  return (WIDTHS as readonly string[]).includes(w) ? (w as Width) : 'normal'
+}
+
+function loadZoom(): number {
+  const z = Number((typeof localStorage !== 'undefined' && localStorage.getItem(ZOOM_KEY)) || '')
+  return z >= MIN_ZOOM && z <= MAX_ZOOM ? z : 1
+}
+
 export function WebReader(): React.JSX.Element {
   const [docs, setDocs] = useState<Doc[]>(loadDocs)
   const [active, setActive] = useState(0)
@@ -68,6 +86,8 @@ export function WebReader(): React.JSX.Element {
   const [dragOver, setDragOver] = useState(false)
   const [progress, setProgress] = useState(0)
   const [activeHeadingId, setActiveHeadingId] = useState('')
+  const [width, setWidth] = useState<Width>(loadWidth)
+  const [zoom, setZoom] = useState<number>(loadZoom)
   const fileInput = useRef<HTMLInputElement>(null)
   const docRef = useRef<HTMLDivElement>(null)
   const mainRef = useRef<HTMLElement>(null)
@@ -92,6 +112,16 @@ export function WebReader(): React.JSX.Element {
       /* too large for storage - skip persistence */
     }
   }, [docs])
+
+  // Persist reading-display preferences.
+  useEffect(() => {
+    try {
+      localStorage.setItem(WIDTH_KEY, width)
+      localStorage.setItem(ZOOM_KEY, String(zoom))
+    } catch {
+      /* ignore quota */
+    }
+  }, [width, zoom])
 
   // Render the active document with the desktop app's exact, sanitized pipeline.
   useEffect(() => {
@@ -425,6 +455,40 @@ export function WebReader(): React.JSX.Element {
               </div>
             ) : (
               <>
+                <div className="web-side-label">Display</div>
+                <div className="web-display">
+                  <div className="web-segmented" role="group" aria-label="Reading width">
+                    {WIDTHS.map((w) => (
+                      <button
+                        key={w}
+                        type="button"
+                        className={'web-seg' + (w === width ? ' is-active' : '')}
+                        onClick={() => setWidth(w)}
+                      >
+                        {w}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="web-textsize" role="group" aria-label="Text size">
+                    <button
+                      type="button"
+                      className="web-seg"
+                      onClick={() => setZoom((z) => Math.max(MIN_ZOOM, Math.round((z - 0.1) * 10) / 10))}
+                      aria-label="Decrease text size"
+                    >
+                      A-
+                    </button>
+                    <span className="web-textsize-val">{Math.round(zoom * 100)}%</span>
+                    <button
+                      type="button"
+                      className="web-seg"
+                      onClick={() => setZoom((z) => Math.min(MAX_ZOOM, Math.round((z + 0.1) * 10) / 10))}
+                      aria-label="Increase text size"
+                    >
+                      A+
+                    </button>
+                  </div>
+                </div>
                 <div className="web-side-label">Documents</div>
                 {docs.map((d, i) => (
                   <div
@@ -492,7 +556,11 @@ export function WebReader(): React.JSX.Element {
               <p className="web-hint">or drag and drop files anywhere</p>
             </div>
           ) : (
-            <article className="web-doc markdown-body" ref={docRef}>
+            <article
+              className="web-doc markdown-body"
+              ref={docRef}
+              style={{ maxWidth: WIDTH_PX[width], zoom }}
+            >
               {rendering ? (
                 <p className="web-rendering">Rendering...</p>
               ) : (
@@ -502,6 +570,18 @@ export function WebReader(): React.JSX.Element {
           )}
         </main>
       </div>
+
+      {docs.length > 0 && progress > 0.08 && (
+        <button
+          type="button"
+          className="web-totop"
+          onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Back to top"
+          title="Back to top"
+        >
+          ↑
+        </button>
+      )}
 
       {dragOver && docs.length > 0 && <div className="web-dropmask">Drop Markdown files to add</div>}
     </div>
