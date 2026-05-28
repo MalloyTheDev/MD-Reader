@@ -50,19 +50,36 @@ were enabled, so the attack surface is exactly what the WebView already exposes.
 
 ## Measurements
 
-| Metric                                    | Electron v2.0.0-alpha.1        | Tauri experiment           |
-| ----------------------------------------- | ------------------------------ | -------------------------- |
-| Installer size                            | **~138.5 MB**                  | **TBD - see Results**       |
-| Installed footprint (unpacked, approx.)   | ~430 MB (Chromium + Node + app) | **TBD - see Results**       |
-| Cold-start memory (idle, one window)      | ~250 MB (Chromium + V8)        | **TBD - see Results**       |
-| First-build wall time                     | ~3-5 min                       | **TBD - see Results**       |
-| Subsequent build (cached)                 | ~30 s                          | **TBD - see Results**       |
-| Rust toolchain required                   | No                             | Yes (cargo + rustc 1.77+)  |
+Measured on this branch, this machine (Windows 11, Rust 1.95.0, Node 22, Tauri 2.11.2).
+Both builds were release / production, with the **same** `dist-web/` frontend (v2 OKLCH
+tokens + locally-bundled Source Serif 4 / Inter Tight / JetBrains Mono + the `renderBodyHtml`
+pipeline). The only thing that differs is the shell.
+
+| Metric                                    | Electron v2.0.0-alpha.1                 | Tauri experiment                                | Ratio                |
+| ----------------------------------------- | --------------------------------------- | ----------------------------------------------- | -------------------- |
+| **Installer (NSIS)**                      | 145,223,604 B (**138.5 MB**)            | 4,596,325 B (**4.4 MB**)                        | **~32x smaller**     |
+| Installer (MSI alternative)               | n/a (Electron NSIS only)                | 5,570,560 B (5.3 MB)                            | -                    |
+| **Unpacked footprint**                    | 518 MB (`dist/win-unpacked/`)           | ~11 MB (`md-reader-tauri.exe`, assets embedded) | **~47x smaller**     |
+| Frontend payload bundled                  | same `dist-web/` ~6.4 MB                | same `dist-web/` ~6.4 MB embedded               | -                    |
+| First-build wall time                     | ~3-5 min                                | ~10-15 min (Cargo downloads + compiles)         | slower               |
+| Subsequent build (cached)                 | ~30 s                                   | ~30-60 s (incremental Rust)                     | comparable           |
+| Rust toolchain required                   | No                                      | Yes (cargo + rustc 1.77+)                       | -                    |
+| Smoke launch (`timeout 4 <exe>`)          | -                                       | exit 124 (ran 4 s, killed by timeout - clean)   | -                    |
 
 ## Results
 
-> Filled in when the first Tauri build completes. See "Verification" below for
-> the exact paths / commands that produced these numbers.
+The Tauri shell **builds and launches** without code changes beyond the
+scaffold. The shipped NSIS installer is **~32x smaller** and the unpacked app
+is **~47x smaller** than the Electron build. The same `.md` content renders
+identically because both shells run the same `renderBodyHtml` pipeline against
+the same bundled fonts and tokens.
+
+The cost of those numbers is **not** in the shell - it is in the missing
+`window.api` surface. The Tauri build here only wraps the simpler `src/web/`
+frontend, which already gets by with browser File API + drag-drop + localStorage.
+The Electron app's renderer relies on a much richer IPC (vault, watcher,
+`safeStorage`, AI HTTP, custom protocols) that does not yet exist on the Rust
+side and is the work that would dominate a real migration.
 
 ## What works
 
@@ -119,7 +136,45 @@ were enabled, so the attack surface is exactly what the WebView already exposes.
 
 ## Recommendation
 
-> Filled in after the build + a brief side-by-side run.
+**Yes, Tauri is worth pursuing as the future shell - but not yet, and not as a
+big-bang migration.** Recommend the following sequence:
+
+1. **Ship v2.0.0 on Electron first.** The v2.0.0-alpha installer on
+   `feat/v2-redesign` is already built and working with the full vault / AI /
+   highlights / flashcards / graph feature set. Cutting v2.0.0 protects users
+   from the v1.5.0 -> v2 visual break with a real release, regardless of what
+   we do with the shell.
+
+2. **Open `experiment/tauri-full-port` from `feat/v2-redesign` (not this
+   branch).** Goal: port the Electron renderer (not the web app) into Tauri,
+   by writing a `window.api` shim that calls Rust commands. Tackle commands in
+   priority order:
+   1. File system (walk, read, write, trash, watcher) - largest surface, most
+      `unsafe`-adjacent Rust, biggest blocker.
+   2. Vault + sidecar (`.mdreader/data.json` per folder, atomic writes).
+   3. `safeStorage` equivalent (`keyring` crate).
+   4. AI HTTP with the SSRF redirect-guard (`reqwest` with manual redirect
+      policy + per-provider host pinning).
+   5. `mdimg://` custom protocol (Tauri's custom-protocol handler).
+   6. Native menus, dialogs, OS open/reveal (Tauri plugins).
+   Estimate: 2-4 focused weeks. Each command added requires the same security
+   review the Electron side already passed.
+
+3. **Re-measure with the FULL app** once parity is reached. Bundle size will
+   grow once the AI HTTP layer, `keyring`, `notify` watcher, etc. are linked
+   in - probably to ~10-20 MB installer instead of 4 MB. Still a giant win
+   versus Electron's 138 MB, but the headline number will be smaller than
+   what this experiment shows.
+
+4. **Cut over** only after the full app has gone through one security audit
+   round on the Rust side and the existing 164 unit tests have Tauri-side
+   equivalents (especially path-traversal, symlink, SSRF, malformed AI config).
+
+**Do not merge `experiment/tauri` to `main`.** It is a feasibility artifact
+and a place to come back to when starting the full port. Keep it pushed so
+the numbers above are reproducible. The web app branch (`feat/v2-web`) and
+the v2 desktop branch (`feat/v2-redesign`) continue forward independently of
+the Tauri direction.
 
 ## How to reproduce
 
