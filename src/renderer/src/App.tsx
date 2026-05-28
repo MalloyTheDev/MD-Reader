@@ -33,6 +33,7 @@ import { ConfirmDeleteModal } from './components/ConfirmDeleteModal'
 import { TemplatePicker } from './components/TemplatePicker'
 import type { DocTemplate } from './lib/templates'
 import { DocInfoPanel } from './components/DocInfoPanel'
+import { Ico } from './components/Icons'
 import { computeDocStats, findBrokenWikiLinks } from './lib/docinfo'
 import { newCard, scheduleCard } from './lib/annotations'
 import { annotationsToMarkdown, deckToCsv, renderBodyHtml, renderDocHtml } from './lib/export'
@@ -50,7 +51,6 @@ export type SortMode = 'name' | 'modified' | 'recent'
 
 const THEMES: { key: ThemeName; label: string }[] = [
   { key: 'light', label: 'Light' },
-  { key: 'sepia', label: 'Sepia' },
   { key: 'dark', label: 'Dark' }
 ]
 
@@ -1237,9 +1237,7 @@ function App(): React.JSX.Element {
   }, [])
 
   const cycleTheme = useCallback(() => {
-    const order: ThemeName[] = ['light', 'sepia', 'dark', 'nord', 'contrast']
-    const i = order.indexOf(settings.theme)
-    updateSettings({ theme: order[(i + 1) % order.length] })
+    updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' })
   }, [settings.theme, updateSettings])
 
   const reopenClosed = useCallback(() => {
@@ -1456,91 +1454,112 @@ function App(): React.JSX.Element {
   const currentTitle = doc?.title || (current ? titleFor(current) : 'MD Reader')
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbar-left">
-          {current && (
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={backToLibrary}
-              title="Back to library"
+    <div className="app2">
+      <header className="tb">
+        <div className="tb-left">
+          {current ? (
+            <>
+              <button
+                type="button"
+                className="tb-back"
+                onClick={backToLibrary}
+                title="Back to library"
+                aria-label="Back to library"
+              >
+                <Ico.arrLeft />
+              </button>
+              <span className="tb-doc-title">{currentTitle}</span>
+            </>
+          ) : (
+            <a
+              className="brand2"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+              }}
             >
-              ←
-            </button>
+              <div className="brand2-mark">M</div>
+              <span className="brand2-name">MD Reader</span>
+              {indexing && (
+                <span className="badge" style={{ marginLeft: 8 }}>
+                  indexing…
+                </span>
+              )}
+            </a>
           )}
-          <span className="app-title">{currentTitle}</span>
-          {indexing && !current && <span className="badge">indexing…</span>}
         </div>
-        <div className="topbar-center">
+        <div className="tb-mid">
           {folder && (
-            <input
-              className="search-input"
-              type="search"
-              spellCheck={false}
-              placeholder={current ? 'Find in page…' : 'Search library…'}
-              value={current ? docQuery : libQuery}
-              onChange={(e) =>
-                current ? setDocQuery(e.target.value) : setLibQuery(e.target.value)
-              }
-            />
+            <div className="tb-search">
+              <Ico.search />
+              <input
+                type="search"
+                spellCheck={false}
+                placeholder={current ? 'Find in page…' : 'Search library…'}
+                value={current ? docQuery : libQuery}
+                onChange={(e) =>
+                  current ? setDocQuery(e.target.value) : setLibQuery(e.target.value)
+                }
+              />
+              <kbd>⌘K</kbd>
+            </div>
           )}
         </div>
-        <div className="topbar-right">
+        <div className="tb-right">
           {current && (
             <button
               type="button"
-              className={'btn-icon' + (editing ? ' is-active' : '')}
+              className={'ibtn' + (editing ? ' on' : '')}
               onClick={() => setEditing((e) => !e)}
               title={editing ? 'Done editing' : 'Edit'}
               aria-pressed={editing}
             >
-              ✎
+              <Ico.edit />
             </button>
           )}
           {current && !editing && (
             <button
               type="button"
-              className={'btn-icon' + (tocOpen ? ' is-active' : '')}
+              className={'ibtn' + (tocOpen ? ' on' : '')}
               onClick={() => setTocOpen((o) => !o)}
               title="Table of contents"
               aria-pressed={tocOpen}
             >
-              ☰
+              <Ico.toc />
             </button>
           )}
           {current && (
             <button
               type="button"
-              className={'btn-icon' + (aiOpen ? ' is-active' : '')}
+              className={'ibtn' + (aiOpen ? ' on' : '')}
               onClick={() => setAiOpen((o) => !o)}
               title="Study assistant (AI)"
               aria-pressed={aiOpen}
             >
-              ✨
+              <Ico.sparkle />
             </button>
           )}
           {current && !editing && (
             <button
               type="button"
-              className={'btn-icon' + (createOpen ? ' is-active' : '')}
+              className={'ibtn' + (createOpen ? ' on' : '')}
               onClick={() => setCreateOpen(true)}
               title="Repurpose with AI"
               aria-pressed={createOpen}
             >
-              ✦
+              <Ico.star />
             </button>
           )}
           {current && !editing && (
-            <div className="export-wrap">
+            <div className="export-wrap" style={{ position: 'relative' }}>
               <button
                 type="button"
-                className={'btn-icon' + (exportOpen ? ' is-active' : '')}
+                className={'ibtn' + (exportOpen ? ' on' : '')}
                 onClick={() => setExportOpen((o) => !o)}
                 title="Export"
                 aria-pressed={exportOpen}
               >
-                ⇩
+                <Ico.download />
               </button>
               {exportOpen && (
                 <>
@@ -1567,38 +1586,48 @@ function App(): React.JSX.Element {
           {current && !editing && (
             <button
               type="button"
-              className="btn-icon"
+              className="ibtn"
               onClick={() => setSlidesOpen(true)}
               title="Present (slides)"
             >
-              ▦
+              <Ico.slides />
             </button>
           )}
           {current && !editing && (
             <button
               type="button"
-              className={'btn-icon' + (docInfoOpen ? ' is-active' : '')}
+              className={'ibtn' + (docInfoOpen ? ' on' : '')}
               onClick={() => setDocInfoOpen(true)}
               title="Document info"
               aria-pressed={docInfoOpen}
             >
-              ⓘ
+              <Ico.info />
             </button>
           )}
-          <button type="button" className="btn-icon" onClick={cycleTheme} title="Switch theme">
-            ◑
+          <span className="tb-divider" />
+          <button type="button" className="ibtn" onClick={cycleTheme} title="Switch theme">
+            {settings.theme === 'dark' ? <Ico.sun /> : <Ico.moon />}
           </button>
-          <button type="button" className="btn-icon" onClick={pickFolder} title="Open folder">
-            📂
+          <button type="button" className="ibtn" onClick={pickFolder} title="Open folder">
+            <Ico.folder />
           </button>
           <button
             type="button"
-            className={'btn-icon' + (settingsOpen ? ' is-active' : '')}
+            className={'ibtn' + (settingsOpen ? ' on' : '')}
             onClick={() => setSettingsOpen((o) => !o)}
             title="Reading settings"
             aria-pressed={settingsOpen}
           >
-            Aa
+            <span
+              style={{
+                fontFamily: 'var(--font-read)',
+                fontSize: 14,
+                fontWeight: 600,
+                letterSpacing: '-0.01em'
+              }}
+            >
+              Aa
+            </span>
           </button>
           {settingsOpen && (
             <SettingsPanel
@@ -1615,33 +1644,44 @@ function App(): React.JSX.Element {
         </div>
       </header>
 
-      {tabs.length > 0 && (
-        <div className="tab-bar">
+      {(tabs.length > 0 || current) && (
+        <div className="tabs2">
+          <button
+            type="button"
+            className={'tab2' + (!current ? ' on' : '')}
+            onClick={backToLibrary}
+            title="Library"
+          >
+            <Ico.shelf /> Library
+          </button>
           {tabs.map((t) => (
-            <div
+            <button
               key={t.absolutePath}
-              className={'tab' + (current?.absolutePath === t.absolutePath ? ' is-active' : '')}
+              type="button"
+              className={
+                'tab2' + (current?.absolutePath === t.absolutePath ? ' on' : '')
+              }
               onClick={() => switchTab(t.absolutePath)}
               title={t.relativePath}
             >
-              <span className="tab-title">{titleFor(t)}</span>
-              <button
-                type="button"
-                className="tab-close"
+              <Ico.book /> {titleFor(t)}
+              <span
+                className="x"
                 onClick={(e) => {
                   e.stopPropagation()
                   closeTab(t.absolutePath)
                 }}
                 aria-label="Close tab"
               >
-                ×
-              </button>
-            </div>
+                <Ico.close />
+              </span>
+            </button>
           ))}
         </div>
       )}
 
-      <main className="content-area">
+      <main className="main2">
+        <div className="canvas2">
         {!ready ? (
           <div className="loading">Loading…</div>
         ) : current ? (
@@ -1728,6 +1768,7 @@ function App(): React.JSX.Element {
             onFolderClick={(f) => setActiveFolder((cur) => (cur === f ? null : f))}
           />
         )}
+        </div>
       </main>
 
       {graphOpen && graph && (

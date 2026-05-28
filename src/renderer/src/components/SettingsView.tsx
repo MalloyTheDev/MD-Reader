@@ -60,10 +60,7 @@ interface Props {
 
 const THEMES: { key: ThemeName; label: string }[] = [
   { key: 'light', label: 'Light' },
-  { key: 'sepia', label: 'Sepia' },
-  { key: 'dark', label: 'Dark' },
-  { key: 'nord', label: 'Nord' },
-  { key: 'contrast', label: 'Contrast' }
+  { key: 'dark', label: 'Dark' }
 ]
 
 const ACCENT_PRESETS = [

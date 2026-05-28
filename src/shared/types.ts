@@ -23,7 +23,8 @@ export interface ReadFileResult {
   author: string | null
 }
 
-export type ThemeName = 'light' | 'sepia' | 'dark' | 'nord' | 'contrast'
+// v2 identity reduces the palette to two themes - the v1 'sepia' / 'nord' / 'contrast' are gone.
+export type ThemeName = 'light' | 'dark'
 
 export interface AppSettings {
   theme: ThemeName
@@ -198,7 +199,7 @@ export interface WindowBounds {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'sepia',
+  theme: 'light',
   fontSizePx: 19,
   readingWidthCh: 72,
   lineHeight: 1.7,
