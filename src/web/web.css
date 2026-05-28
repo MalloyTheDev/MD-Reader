@@ -1,0 +1,63 @@
+/* Web-only chrome overrides. The desktop main.css carries the v2 token system and shell;
+   this file adjusts a few things that differ in the browser (no Electron window controls,
+   no IPC, the reader is a simple scroller rather than the multi-column paginator). */
+
+/* The web reader uses a normal scrolling article (no column paginator). Hide the empty
+   page footer the desktop reader paints. */
+.web-only-canvas {
+  height: 100%;
+  overflow: auto;
+  padding: 28px 0 64px;
+}
+.web-only-article {
+  max-width: 66ch;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* Drop-target dim while the user is dragging a file over the window. */
+.web-dropmask {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 600;
+  color: var(--accent-ink);
+  background: color-mix(in oklch, var(--accent-soft) 60%, transparent);
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* Empty state on the library/canvas when no docs are opened. */
+.web-empty {
+  max-width: 640px;
+  margin: 12vh auto 0;
+  padding: 36px 24px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+  background: color-mix(in oklch, var(--bg-2) 50%, transparent);
+}
+.web-empty-emoji { font-size: 48px; }
+.web-empty h1 {
+  font-family: var(--font-read);
+  font-weight: 600;
+  font-size: 24px;
+  margin: 8px 0 6px;
+  letter-spacing: -0.02em;
+}
+.web-empty p { color: var(--muted); margin: 0 0 18px; }
+.web-empty .web-hint { font-size: 12.5px; color: var(--faint); margin-top: 14px; }
+
+/* Tag below the brand mark to distinguish from the desktop app. */
+.web-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
