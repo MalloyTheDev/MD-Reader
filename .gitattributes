@@ -1,0 +1,40 @@
+# Force text classification + LF normalization for source files so a stray NUL byte
+# (e.g. from a tool that wrote a file with mixed encoding) cannot cause git to flag the
+# file as binary and hide the diff. Without this, git's auto-detect would pick "binary"
+# the moment a single NUL slips through, breaking PR review.
+
+*               text=auto eol=lf
+
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.js            text eol=lf
+*.jsx           text eol=lf
+*.mjs           text eol=lf
+*.cjs           text eol=lf
+*.json          text eol=lf
+*.md            text eol=lf
+*.css           text eol=lf
+*.html          text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.toml          text eol=lf
+*.rs            text eol=lf
+
+# Lockfiles - text but never diff inline (too noisy in PRs).
+package-lock.json   text eol=lf -diff
+Cargo.lock          text eol=lf -diff
+
+# Real binaries.
+*.woff2         binary
+*.woff          binary
+*.ttf           binary
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.icns          binary
+*.exe           binary
+*.dll           binary
+*.so            binary
+*.dylib         binary
