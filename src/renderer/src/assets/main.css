@@ -1703,6 +1703,209 @@ mark.find.cur { background: var(--accent); color: white; }
 .panel-backdrop { position: fixed; inset: 0; z-index: 39; background: transparent; }
 .menu-backdrop  { position: fixed; inset: 0; z-index: 39; background: transparent; }
 
+/* =====================  Editor carryover (v1 class names, v2 look)  =====================
+   Editor.tsx is unchanged - the CSS below restyles the existing class names in v2 tokens. */
+.editor-layout {
+  display: flex; flex-direction: column;
+  height: 100%; overflow: hidden;
+  background: var(--bg);
+}
+.editor-pane {
+  display: flex; flex-direction: column;
+  flex: 1; min-height: 0; overflow: hidden;
+}
+.editor-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--bg-2);
+  font-size: 12px; color: var(--muted);
+}
+.editor-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--good); font-size: 12px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.editor-status.is-dirty { color: var(--warn); }
+.editor-hint {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--faint);
+  margin-left: 6px;
+}
+.editor-ai-status {
+  color: var(--accent-ink);
+  font-size: 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.editor-ai-error {
+  color: var(--danger); font-size: 12px;
+}
+.editor-count {
+  margin-left: auto;
+  font-size: 11.5px; color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.editor-find {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-2);
+}
+.find-input {
+  height: 28px; padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  font-family: var(--font-ui); font-size: 12.5px;
+  color: var(--ink); outline: none;
+  min-width: 140px;
+}
+.find-input:focus { border-color: var(--accent); }
+.find-count {
+  color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums;
+}
+.editor-insert {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--bg);
+  font-size: 11.5px;
+}
+.insert-label {
+  font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  font-weight: 600; color: var(--faint);
+  margin-right: 6px;
+}
+.insert-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font: inherit; font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.insert-btn:hover { background: var(--surface); border-color: var(--line-2); color: var(--ink); }
+.insert-btn:disabled { opacity: 0.4; cursor: default; }
+.insert-btn.is-active, .insert-btn.insert-ai.is-active {
+  background: var(--accent-soft); color: var(--accent-ink); border-color: transparent;
+}
+.insert-btn.insert-ai { color: var(--accent-ink); }
+.insert-sep { width: 1px; height: 16px; background: var(--line); margin: 0 6px; }
+.editor-ai-wrap { position: relative; }
+.editor-ai-menu {
+  position: absolute; top: 36px; right: 0;
+  list-style: none;
+  margin: 0; padding: 6px;
+  width: 240px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  z-index: 40;
+  animation: pop 180ms cubic-bezier(.2,.7,.2,1);
+}
+.editor-ai-item {
+  display: block; width: 100%; text-align: left;
+  border: none; background: transparent;
+  padding: 7px 9px; border-radius: 6px;
+  color: var(--ink-2); font-size: 13px; cursor: pointer;
+  font-family: inherit;
+}
+.editor-ai-item:hover { background: var(--surface-2); color: var(--ink); }
+.editor-textarea,
+.editor-input,
+.editor-source,
+.editor-code {
+  flex: 1; min-height: 0;
+  width: 100%;
+  border: none; outline: none; resize: none;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 20px 28px 32px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.editor-preview {
+  flex: 1; min-height: 0;
+  overflow: auto;
+  padding: 24px 32px 40px;
+  border-top: 1px solid var(--line-2);
+  background: var(--bg);
+}
+.organize-body { display: flex; flex-direction: column; gap: 10px; }
+.organize-row {
+  display: grid; grid-template-columns: 80px 1fr auto; gap: 12px; align-items: center;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+}
+.organize-label {
+  font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  font-weight: 600; color: var(--muted);
+}
+.organize-val { color: var(--ink); font-size: 13px; }
+.organize-val.organize-links { display: flex; flex-wrap: wrap; gap: 4px; }
+.organize-chip {
+  background: var(--accent-soft); color: var(--accent-ink);
+  padding: 2px 8px; border-radius: 999px;
+  border: none; font-size: 12px; cursor: pointer;
+}
+.sv-hint { color: var(--muted); font-size: 12px; }
+.link-btn {
+  background: none; border: none; padding: 0;
+  color: var(--accent-ink); cursor: pointer;
+  font: inherit; font-size: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--accent) 50%, transparent);
+  text-underline-offset: 2px;
+}
+.link-btn:hover { text-decoration-color: var(--accent); }
+.link-btn.link-danger { color: var(--danger); }
+.btn-small,
+.btn.btn-small {
+  height: 28px; padding: 0 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 5px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-small:hover { background: var(--surface-2); color: var(--ink); }
+.btn-small:disabled { opacity: 0.4; cursor: default; }
+.btn-primary,
+.btn.btn-primary {
+  background: var(--ink); color: var(--bg); border-color: transparent;
+}
+.btn-primary:hover { background: color-mix(in oklch, var(--ink) 88%, var(--accent)); }
+
+/* Slash menu and other transient popovers commonly used by the editor */
+.slash-menu {
+  position: absolute;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  z-index: 60;
+  min-width: 220px;
+  animation: pop 180ms cubic-bezier(.2,.7,.2,1);
+}
+.slash-menu button {
+  display: block; width: 100%; text-align: left;
+  border: none; background: transparent;
+  padding: 6px 10px; border-radius: 6px;
+  color: var(--ink-2); font-size: 13px; cursor: pointer;
+  font-family: inherit;
+}
+.slash-menu button:hover { background: var(--surface-2); color: var(--ink); }
+
 /* =====================  Print  ===================== */
 @media print {
   .tb, .tabs2, .pgf, .toc2, .toast2, .popover, .folder-menu,
