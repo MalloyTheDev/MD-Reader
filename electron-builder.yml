@@ -13,6 +13,10 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # Never bundle Tauri experiment artifacts (Rust target/, gen/) or the standalone web build
+  # (dist-web/) or the design reference - none of these belong in the Electron installer.
+  - '!{src-tauri,dist-web,design,vite.web.config.ts}'
+  - '!{scripts,docs}'
 asarUnpack:
   - resources/**
 win:
