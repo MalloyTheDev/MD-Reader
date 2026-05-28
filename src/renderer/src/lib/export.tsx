@@ -58,8 +58,7 @@ export async function prerenderMermaid(
     const mermaid = (await import('mermaid')).default
     mermaid.initialize({
       startOnLoad: false,
-      theme:
-        theme === 'dark' || theme === 'nord' ? 'dark' : theme === 'sepia' ? 'neutral' : 'default',
+      theme: theme === 'dark' ? 'dark' : 'default',
       securityLevel: 'strict'
     })
     for (const src of sources) {

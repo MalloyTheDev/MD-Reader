@@ -381,12 +381,7 @@ function MermaidBlock({ chart, theme }: { chart: string; theme: string }): React
         const mermaid = (await import('mermaid')).default
         mermaid.initialize({
           startOnLoad: false,
-          theme:
-            theme === 'dark' || theme === 'nord'
-              ? 'dark'
-              : theme === 'sepia'
-                ? 'neutral'
-                : 'default',
+          theme: theme === 'dark' ? 'dark' : 'default',
           securityLevel: 'strict'
         })
         const id = 'mmd-' + Math.random().toString(36).slice(2)
