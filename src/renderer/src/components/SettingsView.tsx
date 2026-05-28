@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AppSettings, AiProvider, ThemeName } from '@shared/types'
+import { THEME_NAMES } from '@shared/types'
 
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n))
 
@@ -19,11 +20,20 @@ export function sanitizeImported(data: unknown): Partial<AppSettings> {
   const oneOf = <T,>(k: keyof AppSettings, allowed: readonly T[]): void => {
     if (allowed.includes(d[k] as T)) out[k] = d[k] as never
   }
-  oneOf('theme', ['light', 'sepia', 'dark', 'nord', 'contrast'])
+  oneOf('theme', THEME_NAMES)
   oneOf('fontFamily', ['serif', 'sans', 'dyslexic'])
   oneOf('pageAnimation', ['off', 'fast', 'smooth'])
   oneOf('uiDensity', ['comfortable', 'compact'])
-  oneOf('aiModel', ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5'])
+  // Live model lists (v1.5.0+) make a hardcoded allowlist obsolete; accept any reasonable
+  // provider model ID and reject abusive shapes (non-string, oversized, control chars,
+  // anything outside [alnum . _ : / -]). Length-bounded so a hostile import file cannot
+  // OOM the settings store.
+  if (
+    typeof d.aiModel === 'string' &&
+    /^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,79}$/.test(d.aiModel)
+  ) {
+    out.aiModel = d.aiModel
+  }
   num('fontSizePx', 14, 30)
   num('readingWidthCh', 50, 100)
   num('lineHeight', 1.2, 2.4)

@@ -24,7 +24,10 @@ export interface ReadFileResult {
 }
 
 // v2 identity reduces the palette to two themes - the v1 'sepia' / 'nord' / 'contrast' are gone.
-export type ThemeName = 'light' | 'dark'
+// Exported as a const tuple so the runtime sanitizer in SettingsView can drive its allowlist off
+// the same source of truth, preventing future type-vs-runtime drift.
+export const THEME_NAMES = ['light', 'dark'] as const
+export type ThemeName = (typeof THEME_NAMES)[number]
 
 export interface AppSettings {
   theme: ThemeName
