@@ -1450,14 +1450,22 @@ mark.find.cur { background: var(--accent); color: white; }
   max-height: min(72vh, var(--col-h, 72vh));
 }
 
-/* Reader chrome: footer, controls, progress, find-bar, focus ruler */
+/* Reader chrome: footer, controls, progress, find-bar, focus ruler.
+   The footer has 5 direct children in order: [controls-side (left bookmarks/notes),
+   Prev button, page-indicator, Next button, controls-side .controls-right (speak/print)].
+   Flex layout with flex:1 on both .controls-side wrappers keeps the Prev/indicator/Next
+   group naturally centered between left and right action clusters. */
 .reader-controls {
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  display: flex; align-items: center;
   padding: 10px 18px 12px;
   border-top: 1px solid var(--line-2);
   background: var(--bg);
-  gap: 16px;
+  gap: 10px;
 }
+.reader-controls > .controls-side    { flex: 1; display: flex; gap: 6px; align-items: center; }
+.reader-controls > .controls-right   { justify-content: flex-end; }
+.reader-controls > .page-btn,
+.reader-controls > .page-indicator   { flex: 0 0 auto; }
 .controls-side { display: flex; gap: 6px; align-items: center; }
 .controls-right { justify-content: flex-end; }
 .page-btn {
@@ -2427,7 +2435,7 @@ mark.find.cur { background: var(--accent); color: white; }
   position: fixed;
   top: calc(var(--topbar-h) + 8px);
   right: 14px;
-  width: 320px;
+  width: 340px;
   max-height: calc(100vh - var(--topbar-h) - 24px);
   background: var(--bg);
   border: 1px solid var(--line-2);
@@ -3113,10 +3121,11 @@ mark.find.cur { background: var(--accent); color: white; }
 
 /* ---------- Tabs row close button ---------- */
 .tabs2 .tab2 .x {
-  width: 16px; height: 16px;
+  width: 18px; height: 18px;
   display: grid; place-items: center;
   border-radius: 4px;
   opacity: 0;
+  margin-left: 2px;
 }
 .tabs2 .tab2:hover .x, .tabs2 .tab2.on .x { opacity: 1; color: var(--faint); }
 .tabs2 .tab2 .x:hover { background: var(--surface-2); color: var(--ink); }
