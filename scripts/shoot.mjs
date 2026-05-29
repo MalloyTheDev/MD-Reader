@@ -170,7 +170,7 @@ async function main() {
 
   // New course panel from the library shelf actions.
   await evalJS(
-    `[...document.querySelectorAll('.shelf-actions .btn')].find(b=>/New course/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.act')].find(b=>/New course/.test(b.textContent))?.click()`
   )
   await sleep(500)
   await shot('08b-course')
@@ -179,7 +179,7 @@ async function main() {
 
   // README-from-code panel.
   await evalJS(
-    `[...document.querySelectorAll('.shelf-actions .btn')].find(b=>/README/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.act')].find(b=>/README/.test(b.textContent))?.click()`
   )
   await sleep(500)
   await shot('08c-readme')
@@ -187,15 +187,15 @@ async function main() {
   await sleep(200)
   // New-folder inline input.
   await evalJS(
-    `[...document.querySelectorAll('.shelf-actions .btn')].find(b=>/New folder/.test(b.textContent))?.click()`
+    `document.querySelector('[title="Create a new collection folder"]')?.click()`
   )
   await sleep(250)
   await shot('08d-newfolder')
-  await evalJS(`document.querySelector('.shelf')?.click()`)
+  await evalJS(`document.querySelector('.lib2')?.click()`)
   await sleep(150)
 
   // Remove/delete confirmation modal.
-  await evalJS(`document.querySelector('.book .book-menu')?.click()`)
+  await evalJS(`document.querySelector('[title^="Remove from library"]')?.click()`)
   await sleep(300)
   await shot('08e-delete-confirm')
   await evalJS(`document.querySelector('.confirm-actions .btn')?.click()`)
@@ -203,7 +203,7 @@ async function main() {
 
   // Open the Math Showcase to verify the upgraded equations.
   await evalJS(
-    `[...document.querySelectorAll('.book')].find(b=>/Math Showcase/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.book2')].find(b=>/Math Showcase/.test(b.textContent))?.click()`
   )
   await sleep(1100)
   await shot('10-math')
@@ -211,7 +211,7 @@ async function main() {
   await sleep(600)
 
   await evalJS(
-    `[...document.querySelectorAll('.shelf-actions .btn')].find(b=>/Tasks/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.act')].find(b=>/Tasks/.test(b.textContent))?.click()`
   )
   await sleep(500)
   await shot('09-tasks')
@@ -220,7 +220,7 @@ async function main() {
 
   // Always-visible folder navigation menu (open another / switch back to recent).
   await evalJS(
-    `[...document.querySelectorAll('.shelf-actions .btn')].find(b=>/Folders/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.act')].find(b=>/Folders/.test(b.textContent))?.click()`
   )
   await sleep(350)
   await shot('11-folders-menu')
@@ -229,7 +229,7 @@ async function main() {
 
   // Templates picker.
   await evalJS(
-    `[...document.querySelectorAll('.shelf-actions .btn')].find(b=>/Template/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.act')].find(b=>/Template/.test(b.textContent))?.click()`
   )
   await sleep(450)
   await shot('12-templates')
@@ -238,7 +238,7 @@ async function main() {
 
   // Charts (safe declarative chart blocks).
   await evalJS(
-    `[...document.querySelectorAll('.book')].find(b=>/Charts Showcase/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.book2')].find(b=>/Charts Showcase/.test(b.textContent))?.click()`
   )
   await sleep(1200)
   await shot('13-charts')
@@ -254,7 +254,7 @@ async function main() {
 
   // Tables & callouts.
   await evalJS(
-    `[...document.querySelectorAll('.book')].find(b=>/Tables & Callouts/.test(b.textContent))?.click()`
+    `[...document.querySelectorAll('.book2')].find(b=>/Tables & Callouts/.test(b.textContent))?.click()`
   )
   await sleep(1200)
   await shot('15-tables-callouts')
@@ -263,7 +263,7 @@ async function main() {
 
   // Cross-library search with operators (search for a term that hits a demo).
   await evalJS(`(() => {
-    const el = document.querySelector('.search-input'); if (!el) return
+    const el = document.querySelector('.tb-search input'); if (!el) return
     const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set
     set.call(el, 'has:chart'); el.dispatchEvent(new Event('input',{bubbles:true}))
   })()`)
