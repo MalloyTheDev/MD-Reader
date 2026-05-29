@@ -80,25 +80,29 @@ footprint vs Electron.
 
 ## 3. What exists on `experiment/tauri` today
 
+Verified contents on `experiment/tauri` (byte sizes from `git cat-file -s`):
 ```
 src-tauri/
   .gitignore
-  Cargo.toml          (681 bytes - minimal deps)
-  tauri.conf.json     (1772 bytes)
-  icons/icon.png
-  src/main.rs         (4 bytes - stub)
-  src/lib.rs          (5012 bytes - the toy backend)
-  src/commands.rs     (0 bytes - EMPTY)
+  Cargo.toml          (676 bytes - minimal deps)
+  Cargo.lock
+  build.rs
+  capabilities/default.json
+  tauri.conf.json     (931 bytes)
+  icons/*             (full icon set: ico/icns/png + Square* tiles)
+  src/main.rs         (177 bytes - calls lib::run())
+  src/lib.rs          (417 bytes - boilerplate only)
 ```
 
-`src/lib.rs` implements exactly three commands, with NO security:
-- `read_file(path)` - raw `std::fs::read_to_string`, no confinement
-- `list_markdown(dir)` - shallow readdir for *.md, no confinement, not recursive
-- `write_file(path, content)` - raw `std::fs::write`, no confinement
+CORRECTION (verified 2026-05-29): the Rust backend implements ZERO commands. `src/lib.rs`
+is just the default Tauri 2 scaffold - `pub fn run()` building `tauri::Builder::default()`
+with a debug log plugin and `generate_context!()`. There is NO `commands.rs` file, NO
+`invoke_handler`, NO `generate_handler`. (An earlier note claimed 3 toy commands existed;
+that was wrong - confirmed by dumping the file.)
 
-This was a bundle-size feasibility spike, not a port. Treat it as scaffolding to be
-replaced, not a foundation to build on. In particular every one of those three is a path
-traversal hole as written - they must be rewritten with `is_inside_root` (section 4).
+Implication: the Rust backend is genuinely 0% done. Nothing to tear out, nothing to build
+on - it is a clean scaffold. Every one of the 36 commands in section 6 is net-new Rust.
+This was a bundle-size feasibility spike (it measured ~32x smaller) not a port.
 
 ---
 
