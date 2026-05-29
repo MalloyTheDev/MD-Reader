@@ -1,6 +1,6 @@
 {
   "name": "md-reader",
-  "version": "2.0.0-alpha.2",
+  "version": "2.0.0-alpha.3",
   "description": "A private, offline-first Markdown reader, library & editor with math, diagrams, charts, and optional AI.",
   "main": "./out/main/index.js",
   "author": "MalloyTheDev",
