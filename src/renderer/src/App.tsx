@@ -420,11 +420,8 @@ function App(): React.JSX.Element {
     root.style.setProperty('--reader-line-height', String(settings.lineHeight))
     if (!settings.accentEnabled) {
       // Neutral: every var(--accent) resolves to the theme's muted gray.
-      root.style.setProperty('--accent', 'var(--fg-muted)')
-      root.style.setProperty(
-        '--accent-soft',
-        'color-mix(in srgb, var(--fg-muted) 18%, transparent)'
-      )
+      root.style.setProperty('--accent', 'var(--muted)')
+      root.style.setProperty('--accent-soft', 'color-mix(in srgb, var(--muted) 18%, transparent)')
     } else if (settings.accent) {
       root.style.setProperty('--accent', settings.accent)
       root.style.removeProperty('--accent-soft')

@@ -6,7 +6,8 @@ import {
   PersistedState,
   WindowBounds,
   DEFAULT_SETTINGS,
-  DEFAULT_STATE
+  DEFAULT_STATE,
+  THEME_NAMES
 } from '../shared/types'
 
 interface ConfigShape {
@@ -35,8 +36,13 @@ async function load(): Promise<ConfigShape> {
         : parsed.aiKey
           ? { anthropic: parsed.aiKey }
           : {}
+    const settings = { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) }
+    // A user upgrading from v1.5.0 may have a removed theme ('sepia'/'nord'/'contrast') persisted
+    // on disk. Those have no v2 CSS, so clamp any unknown theme back to the default rather than
+    // letting it reach the renderer and silently fall back to light.
+    if (!THEME_NAMES.includes(settings.theme)) settings.theme = DEFAULT_SETTINGS.theme
     cache = {
-      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
+      settings,
       state: { ...DEFAULT_STATE, ...(parsed.state ?? {}) },
       window: parsed.window ?? null,
       aiKeys
