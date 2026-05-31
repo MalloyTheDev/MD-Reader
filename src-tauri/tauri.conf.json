@@ -1,18 +1,18 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "md-reader-tauri",
-  "version": "0.1.0",
+  "productName": "MD Reader",
+  "version": "2.0.0",
   "identifier": "com.malloythedev.mdreader",
   "build": {
-    "frontendDist": "../dist-web",
-    "devUrl": "http://localhost:5174",
-    "beforeDevCommand": "npm run dev:web",
-    "beforeBuildCommand": "npm run build:web"
+    "frontendDist": "../dist-tauri",
+    "devUrl": "http://localhost:5175",
+    "beforeDevCommand": "npm run dev:tauri-renderer",
+    "beforeBuildCommand": "npm run build:tauri-renderer"
   },
   "app": {
     "windows": [
       {
-        "title": "MD Reader (Tauri experiment)",
+        "title": "MD Reader",
         "width": 1200,
         "height": 820,
         "minWidth": 720,
@@ -22,12 +22,12 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: mdimg: asset: http://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,8 +35,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
-    }
+    "fileAssociations": [
+      { "ext": ["md"], "name": "Markdown Document", "description": "Markdown Document", "role": "Editor" },
+      { "ext": ["markdown"], "name": "Markdown Document", "description": "Markdown Document", "role": "Editor" },
+      { "ext": ["mdown"], "name": "Markdown Document", "role": "Editor" },
+      { "ext": ["mkd"], "name": "Markdown Document", "role": "Editor" }
+    ]
   }
 }
