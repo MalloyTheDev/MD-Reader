@@ -5,6 +5,7 @@ dist-tauri
 out
 shots
 .claude
+.cargo
 .DS_Store
 .eslintcache
 *.log*

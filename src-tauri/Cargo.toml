@@ -21,7 +21,7 @@ tauri-build = { version = "2", features = [] }
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
@@ -32,14 +32,25 @@ tauri-plugin-window-state = "2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util"] }
 futures-util = "0.3"
-# OS secret store for AI keys (Windows Credential Manager), parity with Electron safeStorage.
-keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native"] }
 # Recursive vault walk + recycle-bin delete + config dir resolution + file watching.
 walkdir = "2"
 trash = "5"
 dirs = "5"
 notify = "6"
 notify-debouncer-full = "0.3"
+
+# OS secret store for AI keys, parity with Electron safeStorage. The credential-store backend
+# is platform-specific, so the feature is selected per target (avoids compiling Linux
+# secret-service / dbus on Windows). MD Reader currently ships Windows only; the macOS/Linux
+# entries are ready for the cross-platform roadmap item.
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service"] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
