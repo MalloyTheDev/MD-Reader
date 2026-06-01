@@ -20,6 +20,9 @@ pub struct AppState {
 struct Inner {
     library_root: Option<PathBuf>,
     authorized_roots: HashSet<PathBuf>,
+    // A .md path passed on the command line (file association / second-instance) that the renderer
+    // has not yet picked up via get_pending_open_path. Mirrors pendingOpenPath in index.ts.
+    pending_open: Option<PathBuf>,
 }
 
 impl AppState {
@@ -49,5 +52,27 @@ impl AppState {
             Some(root) => is_inside(&root, candidate),
             None => false,
         }
+    }
+
+    /// Record a pending file-open (and authorize its folder so the renderer can list it).
+    pub fn set_pending_open(&self, p: &Path) {
+        let mut g = self.inner.lock().unwrap();
+        if let Some(dir) = p.parent() {
+            g.authorized_roots.insert(normalize(dir));
+        }
+        g.pending_open = Some(p.to_path_buf());
+    }
+
+    /// Take the pending file-open (one-shot: clears it). Authorizes the folder again in case the
+    /// pending path was set before this state existed.
+    pub fn take_pending_open(&self) -> Option<PathBuf> {
+        let mut g = self.inner.lock().unwrap();
+        let p = g.pending_open.take();
+        if let Some(ref path) = p {
+            if let Some(dir) = path.parent() {
+                g.authorized_roots.insert(normalize(dir));
+            }
+        }
+        p
     }
 }

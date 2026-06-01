@@ -24,9 +24,11 @@ log = "0.4"
 tauri = { version = "2", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
-tauri-plugin-shell = "2"
+tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2"
+# Decode the percent-encoded base/p params of the mdimg:// image protocol URL.
+urlencoding = "2"
 # HTTP for AI providers, rustls so we do not depend on a system OpenSSL. The SSRF guard
 # (manual redirect policy + host pinning) is built on top of this in the AI step.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }

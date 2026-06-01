@@ -214,10 +214,26 @@ pub fn new_file_impl(root: &Path, folder_path: &str, name: &str) -> R<String> {
 // ── Files / vault / folders ────────────────────────────────────────────────
 
 #[tauri::command]
-pub fn list_markdown(folder_path: String, state: State<'_, AppState>) -> R<Vec<FileMeta>> {
+pub fn list_markdown(
+    folder_path: String,
+    state: State<'_, AppState>,
+    config: State<'_, ConfigStore>,
+) -> R<Vec<FileMeta>> {
     let root = normalize(Path::new(&folder_path));
     if !state.is_authorized(&root) {
-        return Err("Folder not authorized - open it with the folder picker.".into());
+        // Restore parity with Electron ipc.ts: on a fresh process the renderer calls
+        // list_markdown(lastFolder) before any dialog has authorized it. Allow exactly the
+        // persisted lastFolder to re-authorize itself; refuse to widen the root to anything else.
+        let persisted = config
+            .get_state()
+            .get("lastFolder")
+            .and_then(|v| v.as_str())
+            .map(|s| normalize(Path::new(s)));
+        if persisted.as_deref() == Some(root.as_path()) {
+            state.authorize_root(&root);
+        } else {
+            return Err("Folder not authorized - open it with the folder picker.".into());
+        }
     }
     state.set_library_root(&root);
     Ok(list_markdown_impl(&root))
@@ -576,19 +592,44 @@ pub fn sidecar_save(file_path: String, data: Value, state: State<'_, AppState>) 
     Ok(())
 }
 
+// ── Shell / window / app (STEP 8) ───────────────────────────────────────────
+
+// Open an external URL in the default browser. http/https only, mirroring shell:openExternal -
+// never hand an arbitrary scheme (file:, etc.) to the OS opener.
 #[tauri::command]
-pub fn open_external(_url: String) -> R<()> {
-    Err("not implemented".into())
+pub fn open_external(url: String, app: tauri::AppHandle) -> R<()> {
+    let lower = url.to_ascii_lowercase();
+    if !lower.starts_with("http://") && !lower.starts_with("https://") {
+        return Ok(()); // silently ignore non-web schemes, like the Electron handler
+    }
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
+// Reveal a library file in the OS file explorer. Confined to the library root, matching
+// shell:showItem - resolves base+p, refuses anything outside the open library.
 #[tauri::command]
-pub fn show_item(_base: String, _p: String) -> bool {
-    false
+pub fn show_item(base: String, p: String, app: tauri::AppHandle, state: State<'_, AppState>) -> bool {
+    let p_path = Path::new(&p);
+    let abs = if p_path.is_absolute() {
+        normalize(p_path)
+    } else {
+        normalize(&Path::new(&base).join(&p))
+    };
+    if !state.is_inside_root(&abs) {
+        return false;
+    }
+    use tauri_plugin_opener::OpenerExt;
+    app.opener().reveal_item_in_dir(&abs).is_ok()
 }
 
+// The renderer asks for this once on startup (avoids a race with the app:openPath event).
+// One-shot: returns and clears any pending file-association/CLI open path.
 #[tauri::command]
-pub fn get_pending_open_path() -> Option<String> {
-    None
+pub fn get_pending_open_path(state: State<'_, AppState>) -> Option<String> {
+    state.take_pending_open().map(|p| p.to_string_lossy().to_string())
 }
 
 // ── AI (STEP 7) ─────────────────────────────────────────────────────────────
