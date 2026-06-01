@@ -591,31 +591,43 @@ pub fn get_pending_open_path() -> Option<String> {
     None
 }
 
+// ── AI (STEP 7) ─────────────────────────────────────────────────────────────
+// Thin wrappers over ai.rs. Keys live in the OS keyring; ai_status returns only booleans, never
+// the key. ai_run streams tokens to the renderer via the ai:event channel and always resolves Ok
+// (failures arrive as ai:event 'error'), matching the Electron handler contract.
+
 #[tauri::command]
-pub fn ai_status(_provider: String) -> Value {
-    json!({ "available": false, "configured": false })
+pub fn ai_status(provider: String) -> Value {
+    json!({
+        "available": crate::ai::keyring_available(),
+        "configured": crate::ai::is_configured(&provider)
+    })
 }
 
 #[tauri::command]
-pub fn ai_set_key(_provider: String, _key: String) -> bool {
-    false
+pub fn ai_set_key(provider: String, key: String) -> bool {
+    crate::ai::set_key(&provider, &key).is_ok()
 }
 
 #[tauri::command]
-pub fn ai_clear_key(_provider: String) {}
-
-#[tauri::command]
-pub fn ai_list_models(_provider: String, _base_url: Option<String>, _refresh: Option<bool>) -> Vec<String> {
-    Vec::new()
+pub fn ai_clear_key(provider: String) {
+    crate::ai::clear_key(&provider);
 }
 
 #[tauri::command]
-pub fn ai_run(_request: Value) -> R<()> {
-    Err("not implemented".into())
+pub async fn ai_list_models(provider: String, base_url: Option<String>, refresh: Option<bool>) -> Vec<String> {
+    crate::ai::list_models(&provider, base_url.as_deref(), refresh.unwrap_or(false)).await
 }
 
 #[tauri::command]
-pub fn ai_cancel(_run_id: String) {}
+pub async fn ai_run(request: Value, app: tauri::AppHandle, runs: State<'_, crate::ai::AiRuns>) -> R<()> {
+    crate::ai::run(app, request, runs.inner().clone()).await
+}
+
+#[tauri::command]
+pub fn ai_cancel(run_id: String, runs: State<'_, crate::ai::AiRuns>) {
+    runs.cancel(&run_id);
+}
 
 #[tauri::command]
 pub fn export_save(_opts: Value) -> bool {
