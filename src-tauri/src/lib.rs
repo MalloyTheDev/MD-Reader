@@ -1,15 +1,19 @@
 mod commands;
+mod config;
 mod digest;
 mod frontmatter;
 mod paths;
+mod sidecar;
 mod state;
 
+use config::ConfigStore;
 use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
+        .manage(ConfigStore::default())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if cfg!(debug_assertions) {

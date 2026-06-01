@@ -9,6 +9,7 @@
 // the Electron main process uses for safe-path.ts. This lets us verify the file layer without
 // driving the WebView UI.
 
+use crate::config::ConfigStore;
 use crate::frontmatter;
 use crate::paths::{is_inside, normalize, safe_seg};
 use crate::state::AppState;
@@ -533,34 +534,45 @@ pub fn save_image(opts: SaveImageOpts, state: State<'_, AppState>) -> R<String> 
     Ok(format!("assets/{}", target.file_name().unwrap_or_default().to_string_lossy()))
 }
 
-// Settings / state / sidecars - {} merges into the renderer's DEFAULT_SETTINGS / DEFAULT_STATE.
+// ── Settings / state / sidecars (STEP 6) ────────────────────────────────────
+// get_settings/get_state return COMPLETE objects (defaults merged with persisted) because the
+// renderer assigns the result directly into React state; set_* shallow-merge a patch and persist.
+
 #[tauri::command]
-pub fn get_settings() -> Value {
-    json!({})
+pub fn get_settings(config: State<'_, ConfigStore>) -> Value {
+    config.get_settings()
 }
 
 #[tauri::command]
-pub fn set_settings(patch: Value) -> Value {
-    patch
+pub fn set_settings(patch: Value, config: State<'_, ConfigStore>) -> Value {
+    config.set_settings(&patch)
 }
 
 #[tauri::command]
-pub fn get_state() -> Value {
-    json!({})
+pub fn get_state(config: State<'_, ConfigStore>) -> Value {
+    config.get_state()
 }
 
 #[tauri::command]
-pub fn set_state(patch: Value) -> Value {
-    patch
+pub fn set_state(patch: Value, config: State<'_, ConfigStore>) -> Value {
+    config.set_state(&patch)
+}
+
+// Sidecar notes live in the library's own .mdreader/data.json. load is keyed to the open library
+// root; save confines to it. Both no-op safely when no library is open.
+#[tauri::command]
+pub fn sidecar_load(_folder_path: String, state: State<'_, AppState>) -> Value {
+    match state.library_root() {
+        Some(root) => crate::sidecar::load(&root),
+        None => json!({}),
+    }
 }
 
 #[tauri::command]
-pub fn sidecar_load(_folder_path: String) -> Value {
-    json!({})
-}
-
-#[tauri::command]
-pub fn sidecar_save(_file_path: String, _data: Value) -> R<()> {
+pub fn sidecar_save(file_path: String, data: Value, state: State<'_, AppState>) -> R<()> {
+    if let Some(root) = state.library_root() {
+        crate::sidecar::save(&root, &file_path, &data);
+    }
     Ok(())
 }
 
