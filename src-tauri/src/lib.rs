@@ -1,4 +1,5 @@
 mod commands;
+mod digest;
 mod frontmatter;
 mod paths;
 mod state;
@@ -9,6 +10,7 @@ use state::AppState;
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

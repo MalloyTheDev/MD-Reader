@@ -12,12 +12,36 @@
 use crate::frontmatter;
 use crate::paths::{is_inside, normalize, safe_seg};
 use crate::state::AppState;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 use tauri::State;
+use tauri_plugin_dialog::DialogExt;
 use walkdir::WalkDir;
+
+// Typed opts for the structured commands. serde maps the renderer's camelCase JSON keys onto these
+// snake_case fields via rename_all, so the shim can pass the same object shape it used in Electron.
+#[derive(Deserialize)]
+struct CourseFile {
+    name: String,
+    content: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CourseOpts {
+    folder_name: String,
+    files: Vec<CourseFile>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveImageOpts {
+    base_dir: String,
+    name: String,
+    data: Vec<u8>,
+}
 
 type R<T> = Result<T, String>;
 
@@ -277,41 +301,236 @@ pub fn open_vault(state: State<'_, AppState>) -> R<String> {
     Ok(norm.to_string_lossy().to_string())
 }
 
-// ── Stubs (implemented in later steps) ──────────────────────────────────────
+// ── Vault / folders / import (STEP 5) ───────────────────────────────────────
+// Dialog-driven commands are async and use a oneshot channel + the plugin's callback picker: the
+// blocking picker would deadlock if called on the main thread, and async commands that borrow
+// State<'_> must return Result, so each returns R<...>.
 
 #[tauri::command]
-pub fn pick_folder() -> Option<String> {
-    None // STEP 5 (dialog)
+pub async fn pick_folder(app: tauri::AppHandle, state: State<'_, AppState>) -> R<Option<String>> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Choose your library folder")
+        .pick_folder(move |f| {
+            let _ = tx.send(f);
+        });
+    let picked = rx.await.ok().flatten().and_then(|fp| fp.into_path().ok());
+    Ok(picked.map(|p| {
+        let norm = normalize(&p);
+        state.authorize_root(&norm);
+        state.set_library_root(&norm);
+        norm.to_string_lossy().to_string()
+    }))
 }
 
 #[tauri::command]
-pub fn create_folder(_name: String) -> Option<String> {
-    None
+pub fn create_folder(name: String, state: State<'_, AppState>) -> Option<String> {
+    let root = state.library_root()?;
+    let safe = safe_seg(&name, "New Folder");
+    let mut dir = root.join(&safe);
+    let mut i = 1;
+    while dir.exists() {
+        dir = root.join(format!("{safe} {i}"));
+        i += 1;
+    }
+    let abs = normalize(&dir);
+    if !is_inside(&root, &abs) {
+        return None;
+    }
+    std::fs::create_dir_all(&abs).ok()?;
+    Some(abs.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub fn import_files(_subdir: String) -> u32 {
-    0
+pub async fn import_files(subdir: String, app: tauri::AppHandle, state: State<'_, AppState>) -> R<u32> {
+    let Some(root) = state.library_root() else { return Ok(0) };
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Import Markdown files")
+        .add_filter("Markdown", &["md", "markdown", "mdown", "mkd", "mdx"])
+        .pick_files(move |f| {
+            let _ = tx.send(f);
+        });
+    let Some(files) = rx.await.ok().flatten() else { return Ok(0) };
+    // `subdir` is an existing collection's relative path chosen in the UI; the is_inside guard (not
+    // safe_seg) is what prevents traversal here, so nested collection paths are preserved.
+    let target = if subdir.is_empty() {
+        root.clone()
+    } else {
+        normalize(&root.join(&subdir))
+    };
+    if !is_inside(&root, &target) || std::fs::create_dir_all(&target).is_err() {
+        return Ok(0);
+    }
+    let mut count = 0u32;
+    for fp in files {
+        let Ok(src) = fp.into_path() else { continue };
+        if !is_markdown(&src) {
+            continue;
+        }
+        let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("Imported");
+        let base = safe_seg(stem, "Imported");
+        let mut dest = target.join(format!("{base}.md"));
+        let mut i = 1;
+        while dest.exists() {
+            dest = target.join(format!("{base} {i}.md"));
+            i += 1;
+        }
+        if !is_inside(&root, &normalize(&dest)) {
+            continue;
+        }
+        if std::fs::copy(&src, &dest).is_ok() {
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
 #[tauri::command]
-pub fn import_folder() -> u32 {
-    0
+pub async fn import_folder(app: tauri::AppHandle, state: State<'_, AppState>) -> R<u32> {
+    let Some(root) = state.library_root() else { return Ok(0) };
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Import a folder of Markdown")
+        .pick_folder(move |f| {
+            let _ = tx.send(f);
+        });
+    let Some(src_root) = rx.await.ok().flatten().and_then(|fp| fp.into_path().ok()) else {
+        return Ok(0);
+    };
+    let metas = list_markdown_impl(&src_root);
+    if metas.is_empty() {
+        return Ok(0);
+    }
+    let coll_name = safe_seg(
+        src_root.file_name().and_then(|n| n.to_str()).unwrap_or("Imported"),
+        "Imported",
+    );
+    let mut coll_dir = root.join(&coll_name);
+    let mut n = 1;
+    while coll_dir.exists() {
+        coll_dir = root.join(format!("{coll_name} {n}"));
+        n += 1;
+    }
+    let coll_dir = normalize(&coll_dir);
+    if !is_inside(&root, &coll_dir) {
+        return Ok(0);
+    }
+    let mut count = 0u32;
+    for m in metas {
+        let segs: Vec<&str> = m.relative_path.split('/').collect();
+        let mut dest = coll_dir.clone();
+        for (idx, seg) in segs.iter().enumerate() {
+            if idx == segs.len() - 1 {
+                let stem = Path::new(seg).file_stem().and_then(|s| s.to_str()).unwrap_or("Imported");
+                dest = dest.join(format!("{}.md", safe_seg(stem, "Imported")));
+            } else {
+                dest = dest.join(safe_seg(seg, "folder"));
+            }
+        }
+        if !is_inside(&root, &normalize(&dest)) {
+            continue;
+        }
+        if let Some(parent) = dest.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if std::fs::copy(&m.absolute_path, &dest).is_ok() {
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
+// Read a digest of a user-picked project's source (read-only) for AI README generation. The folder
+// is explicitly chosen via dialog and only read, so it is intentionally NOT confined to the library
+// root. Secrets are redacted in digest::build_digest before the text can reach an LLM.
 #[tauri::command]
-pub fn digest_project() -> Option<Value> {
-    None
+pub async fn digest_project(app: tauri::AppHandle) -> R<Option<Value>> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Choose a project folder to document")
+        .pick_folder(move |f| {
+            let _ = tx.send(f);
+        });
+    let Some(root) = rx.await.ok().flatten().and_then(|fp| fp.into_path().ok()) else {
+        return Ok(None);
+    };
+    let (name, digest, file_count) = crate::digest::build_digest(&root);
+    Ok(Some(json!({ "name": name, "digest": digest, "fileCount": file_count })))
 }
 
+// Create a course pack: a new collection of related notes written together. Returns the absolute
+// path of the first file (the Overview) so the renderer can open it.
 #[tauri::command]
-pub fn create_course(_opts: Value) -> Option<String> {
-    None
+pub fn create_course(opts: CourseOpts, state: State<'_, AppState>) -> Option<String> {
+    let root = state.library_root()?;
+    let safe_folder = safe_seg(&opts.folder_name, "Course");
+    let mut dir = root.join(&safe_folder);
+    let mut i = 1;
+    while dir.exists() {
+        dir = root.join(format!("{safe_folder} {i}"));
+        i += 1;
+    }
+    let dir = normalize(&dir);
+    if !is_inside(&root, &dir) {
+        return None;
+    }
+    std::fs::create_dir_all(&dir).ok()?;
+    let mut first: Option<String> = None;
+    for f in opts.files {
+        let safe_name = safe_seg(&f.name, "Untitled");
+        let target = normalize(&dir.join(format!("{safe_name}.md")));
+        if !is_inside(&root, &target) {
+            continue;
+        }
+        if std::fs::write(&target, &f.content).is_ok() && first.is_none() {
+            first = Some(target.to_string_lossy().to_string());
+        }
+    }
+    first
 }
 
+// Save a pasted/dropped image into an `assets` folder next to the document. Returns the relative
+// href to embed (e.g. "assets/pasted-123.png").
 #[tauri::command]
-pub fn save_image(_opts: Value) -> R<String> {
-    Err("not implemented".into())
+pub fn save_image(opts: SaveImageOpts, state: State<'_, AppState>) -> R<String> {
+    let root = state.library_root().ok_or("Access denied: no library open")?;
+    let base_abs = normalize(Path::new(&opts.base_dir));
+    if !is_inside(&root, &base_abs) {
+        return Err("Access denied: target is outside the library folder".into());
+    }
+    let assets_dir = base_abs.join("assets");
+    let raw_name: String = opts.name.chars().filter(|c| !"\\/:*?\"<>|".contains(*c)).collect();
+    let raw_name = raw_name.trim();
+    let ext_lower = Path::new(raw_name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| format!(".{}", e.to_ascii_lowercase()))
+        .unwrap_or_default();
+    let ext = if [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".avif"].contains(&ext_lower.as_str()) {
+        ext_lower
+    } else {
+        ".png".to_string()
+    };
+    let stem_src = Path::new(raw_name).file_stem().and_then(|s| s.to_str()).unwrap_or("image");
+    let stem: String = safe_seg(stem_src, "image").replace(' ', "-").chars().take(60).collect();
+    let mut target = assets_dir.join(format!("{stem}{ext}"));
+    let mut i = 1;
+    while target.exists() {
+        target = assets_dir.join(format!("{stem}-{i}{ext}"));
+        i += 1;
+    }
+    let target = normalize(&target);
+    if !is_inside(&root, &target) {
+        return Err("Access denied".into());
+    }
+    std::fs::create_dir_all(&assets_dir).map_err(|e| e.to_string())?;
+    std::fs::write(&target, &opts.data).map_err(|e| e.to_string())?;
+    Ok(format!("assets/{}", target.file_name().unwrap_or_default().to_string_lossy()))
 }
 
 // Settings / state / sidecars - {} merges into the renderer's DEFAULT_SETTINGS / DEFAULT_STATE.

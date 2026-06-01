@@ -38,6 +38,8 @@ trash = "5"
 dirs = "5"
 notify = "6"
 notify-debouncer-full = "0.3"
+# Secret redaction in the project digest before it can be sent to an LLM (STEP 5 + STEP 7).
+regex = "1"
 
 # OS secret store for AI keys, parity with Electron safeStorage. The credential-store backend
 # is platform-specific, so the feature is selected per target (avoids compiling Linux
