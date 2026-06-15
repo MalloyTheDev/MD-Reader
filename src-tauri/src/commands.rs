@@ -132,6 +132,10 @@ pub fn list_markdown_impl(root: &Path) -> Vec<FileMeta> {
             continue;
         }
         let Ok(meta) = entry.metadata() else { continue };
+        // If metadata reads but mtime does not (exotic FS only - never on NTFS), fall back to 0 and
+        // STILL include the file. Electron skipped the whole file on a stat failure, but a readable
+        // markdown file must never silently vanish from the library (the never-lose-a-file rule);
+        // an odd sort position is the lesser evil. metadata() failing above already skips it.
         let mtime_ms = meta
             .modified()
             .ok()
@@ -289,11 +293,22 @@ pub fn trash_folder(_folder_rel: String) -> OpResult {
     OpResult { ok: false, error: Some("not implemented".into()) }
 }
 
+// Report which of the given paths are missing. Confined to the library root: a path outside the
+// root is reported as "missing" without probing the real filesystem, so a compromised renderer
+// cannot use this to test for the existence of arbitrary files on disk. (The Electron version
+// probed unconfined; the port plan flagged adding this confinement for parity.)
 #[tauri::command]
-pub fn check_missing(paths: Vec<String>) -> Vec<String> {
+pub fn check_missing(paths: Vec<String>, state: State<'_, AppState>) -> Vec<String> {
+    let root = state.library_root();
     paths
         .into_iter()
-        .filter(|p| !Path::new(p).exists())
+        .filter(|p| {
+            let abs = normalize(Path::new(p));
+            match &root {
+                Some(r) if is_inside(r, &abs) => !abs.exists(),
+                _ => true, // outside the library (or none open): treat as missing, do not probe disk
+            }
+        })
         .collect()
 }
 
@@ -482,9 +497,17 @@ pub async fn digest_project(app: tauri::AppHandle) -> R<Option<Value>> {
 
 // Create a course pack: a new collection of related notes written together. Returns the absolute
 // path of the first file (the Overview) so the renderer can open it.
+// Defensive caps for a generated course pack (the AI normally produces 4-7 short lessons; these
+// only guard against a runaway/garbage payload).
+const MAX_COURSE_FILES: usize = 500;
+const MAX_COURSE_FILE_BYTES: usize = 1_000_000;
+
 #[tauri::command]
 pub fn create_course(opts: CourseOpts, state: State<'_, AppState>) -> Option<String> {
     let root = state.library_root()?;
+    if opts.files.len() > MAX_COURSE_FILES {
+        return None;
+    }
     let safe_folder = safe_seg(&opts.folder_name, "Course");
     let mut dir = root.join(&safe_folder);
     let mut i = 1;
@@ -499,6 +522,9 @@ pub fn create_course(opts: CourseOpts, state: State<'_, AppState>) -> Option<Str
     std::fs::create_dir_all(&dir).ok()?;
     let mut first: Option<String> = None;
     for f in opts.files {
+        if f.content.len() > MAX_COURSE_FILE_BYTES {
+            continue;
+        }
         let safe_name = safe_seg(&f.name, "Untitled");
         let target = normalize(&dir.join(format!("{safe_name}.md")));
         if !is_inside(&root, &target) {
@@ -513,8 +539,15 @@ pub fn create_course(opts: CourseOpts, state: State<'_, AppState>) -> Option<Str
 
 // Save a pasted/dropped image into an `assets` folder next to the document. Returns the relative
 // href to embed (e.g. "assets/pasted-123.png").
+// Largest image we will write from a paste/drop. A defensive cap (the renderer is trusted, but an
+// explicit limit guards against a runaway/garbage payload exhausting memory or disk).
+const MAX_IMAGE_BYTES: usize = 50_000_000;
+
 #[tauri::command]
 pub fn save_image(opts: SaveImageOpts, state: State<'_, AppState>) -> R<String> {
+    if opts.data.len() > MAX_IMAGE_BYTES {
+        return Err(format!("Image too large (max {} MB)", MAX_IMAGE_BYTES / 1_000_000));
+    }
     let root = state.library_root().ok_or("Access denied: no library open")?;
     let base_abs = normalize(Path::new(&opts.base_dir));
     if !is_inside(&root, &base_abs) {
@@ -546,8 +579,19 @@ pub fn save_image(opts: SaveImageOpts, state: State<'_, AppState>) -> R<String> 
         return Err("Access denied".into());
     }
     std::fs::create_dir_all(&assets_dir).map_err(|e| e.to_string())?;
-    std::fs::write(&target, &opts.data).map_err(|e| e.to_string())?;
-    Ok(format!("assets/{}", target.file_name().unwrap_or_default().to_string_lossy()))
+    // Symlink-escape defense (parity with the mdimg protocol handler): after creating the assets
+    // dir, canonicalize it and the root and re-check containment, so a symlink planted at
+    // <baseDir>/assets cannot redirect the write outside the library. Canonicalize the dir (which
+    // now exists) rather than the not-yet-created file, then confine the final target under it.
+    let canon_root = std::fs::canonicalize(&root).map_err(|e| e.to_string())?;
+    let canon_assets = std::fs::canonicalize(&assets_dir).map_err(|e| e.to_string())?;
+    if !is_inside(&canon_root, &canon_assets) {
+        return Err("Access denied: assets folder resolves outside the library".into());
+    }
+    let file_name = target.file_name().ok_or("Access denied")?;
+    let real_target = canon_assets.join(file_name);
+    std::fs::write(&real_target, &opts.data).map_err(|e| e.to_string())?;
+    Ok(format!("assets/{}", file_name.to_string_lossy()))
 }
 
 // ── Settings / state / sidecars (STEP 6) ────────────────────────────────────
@@ -586,10 +630,10 @@ pub fn sidecar_load(_folder_path: String, state: State<'_, AppState>) -> Value {
 
 #[tauri::command]
 pub fn sidecar_save(file_path: String, data: Value, state: State<'_, AppState>) -> R<()> {
-    if let Some(root) = state.library_root() {
-        crate::sidecar::save(&root, &file_path, &data);
+    match state.library_root() {
+        Some(root) => crate::sidecar::save(&root, &file_path, &data),
+        None => Ok(()), // no library open: nothing to persist (not an error)
     }
-    Ok(())
 }
 
 // ── Shell / window / app (STEP 8) ───────────────────────────────────────────

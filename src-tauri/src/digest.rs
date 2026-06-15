@@ -9,9 +9,10 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use walkdir::WalkDir;
 
-const DIGEST_SKIP: [&str; 18] = [
+const DIGEST_SKIP: [&str; 19] = [
     "node_modules", ".git", ".obsidian", ".trash", ".vscode", ".idea", "dist", "out", "build",
     ".next", ".nuxt", "coverage", "vendor", "target", "__pycache__", ".venv", "venv", ".cache",
+    ".turbo",
 ];
 
 const SRC_EXTS: &[&str] = &[
@@ -76,6 +77,14 @@ fn priority(rel: &str) -> u8 {
     }
     if r.contains("tsconfig") || r.contains(".config.") || r.contains(".conf.") || r.ends_with(".yaml") || r.ends_with(".yml") || r.ends_with(".toml") {
         return 2;
+    }
+    // Entry-point files (index/main/app, optionally under src/) rank above generic source so the
+    // README generator keeps them when the digest hits its size cap. Mirrors ipc.ts priority rule.
+    let stem = r.rsplit('/').next().unwrap_or(&r);
+    for name in ["index", "main", "app"] {
+        if stem.starts_with(&format!("{name}.")) {
+            return 3;
+        }
     }
     5
 }
@@ -183,6 +192,19 @@ mod tests {
         assert!(priority("package.json") < priority("src/util.ts"));
         assert!(priority("README.md") < priority("src/util.ts"));
         assert!(priority("tsconfig.json") < priority("src/util.ts"));
+    }
+
+    #[test]
+    fn priority_ranks_entry_points_above_generic_source() {
+        // index/main/app entry points beat a generic source file...
+        assert!(priority("src/index.ts") < priority("src/util.ts"));
+        assert!(priority("src/main.rs") < priority("src/helpers.rs"));
+        assert!(priority("app.tsx") < priority("widget.tsx"));
+        // ...but still rank below the most descriptive files
+        assert!(priority("package.json") < priority("src/index.ts"));
+        assert!(priority("README.md") < priority("src/main.rs"));
+        // a file merely containing "main" in its name is not an entry point
+        assert_eq!(priority("src/maintenance.ts"), priority("src/other.ts"));
     }
 
     #[test]

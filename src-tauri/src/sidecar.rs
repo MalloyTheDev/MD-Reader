@@ -40,17 +40,14 @@ fn read_files(root: &Path) -> Map<String, Value> {
     Map::new()
 }
 
-fn write_files(root: &Path, files: &Map<String, Value>) {
+fn write_files(root: &Path, files: &Map<String, Value>) -> Result<(), String> {
     let dir = root.join(SIDECAR_DIR);
-    if std::fs::create_dir_all(&dir).is_err() {
-        return; // read-only volume; notes still live in the renderer this session
-    }
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let mut shape = Map::new();
     shape.insert("version".into(), json!(1));
     shape.insert("files".into(), Value::Object(files.clone()));
-    if let Ok(text) = serde_json::to_string_pretty(&Value::Object(shape)) {
-        let _ = std::fs::write(sidecar_path(root), text);
-    }
+    let text = serde_json::to_string_pretty(&Value::Object(shape)).map_err(|e| e.to_string())?;
+    std::fs::write(sidecar_path(root), text).map_err(|e| e.to_string())
 }
 
 /// Load all per-file notes for a library, re-keyed to absolute paths for the renderer.
@@ -64,11 +61,13 @@ pub fn load(root: &Path) -> Value {
     Value::Object(out)
 }
 
-/// Persist one file's notes (annotations / bookmarks / position), dropping empty entries.
-pub fn save(root: &Path, file_path: &str, data: &Value) {
+/// Persist one file's notes (annotations / bookmarks / position), dropping empty entries. Returns
+/// an error if the write fails, so the command can surface it to the renderer instead of silently
+/// losing the user's annotations/bookmarks/positions.
+pub fn save(root: &Path, file_path: &str, data: &Value) -> Result<(), String> {
     let abs = normalize(Path::new(file_path));
     if !is_inside(root, &abs) {
-        return;
+        return Err("Access denied: file is outside the library folder".into());
     }
     let key = rel_posix(root, &abs);
     let mut files = read_files(root);
@@ -98,7 +97,7 @@ pub fn save(root: &Path, file_path: &str, data: &Value) {
     } else {
         files.insert(key, Value::Object(entry));
     }
-    write_files(root, &files);
+    write_files(root, &files)
 }
 
 #[cfg(test)]
@@ -121,7 +120,7 @@ mod tests {
             "annotations": [{ "id": "a1", "start": 0, "end": 3, "color": "yellow", "text": "hi", "createdAt": 1 }],
             "position": { "page": 2, "anchorId": null }
         });
-        save(&root, &file.to_string_lossy(), &data);
+        save(&root, &file.to_string_lossy(), &data).unwrap();
 
         let loaded = load(&root);
         let obj = loaded.as_object().unwrap();
@@ -135,9 +134,9 @@ mod tests {
         let root = tmp_root("empty");
         let file = root.join("n.md");
         std::fs::write(&file, "x").unwrap();
-        save(&root, &file.to_string_lossy(), &json!({ "annotations": [{ "id": "a" }] }));
+        save(&root, &file.to_string_lossy(), &json!({ "annotations": [{ "id": "a" }] })).unwrap();
         // now overwrite with all-empty -> entry should be dropped
-        save(&root, &file.to_string_lossy(), &json!({ "annotations": [], "position": null }));
+        save(&root, &file.to_string_lossy(), &json!({ "annotations": [], "position": null })).unwrap();
         let loaded = load(&root);
         assert!(loaded.as_object().unwrap().is_empty());
     }
@@ -146,7 +145,8 @@ mod tests {
     fn save_rejects_escape() {
         let root = tmp_root("escape");
         let outside = root.join("..").join("evil.md");
-        save(&root, &outside.to_string_lossy(), &json!({ "position": { "page": 1 } }));
+        // an out-of-root path is rejected with an error, not silently accepted
+        assert!(save(&root, &outside.to_string_lossy(), &json!({ "position": { "page": 1 } })).is_err());
         // nothing written -> no sidecar dir created with that entry
         let loaded = load(&root);
         assert!(loaded.as_object().unwrap().is_empty());
