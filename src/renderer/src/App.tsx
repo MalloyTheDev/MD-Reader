@@ -36,7 +36,7 @@ import { DocInfoPanel } from './components/DocInfoPanel'
 import { Ico } from './components/Icons'
 import { computeDocStats, findBrokenWikiLinks } from './lib/docinfo'
 import { newCard, scheduleCard } from './lib/annotations'
-import { annotationsToMarkdown, deckToCsv, renderBodyHtml, renderDocHtml } from './lib/export'
+import { annotationsToMarkdown, deckToCsv, renderDocHtml } from './lib/export'
 import { buildIndex, runLibrarySearch, type LibSearchResult } from './lib/search'
 import { buildGraph, type GraphData } from './lib/graph'
 import { scanTasks, toggleInRaw, type TaskItem } from './lib/tasks'
@@ -525,9 +525,11 @@ function App(): React.JSX.Element {
     setDoc(null)
     setDocQuery('')
     setEditing(false)
-    setTabs((prev) =>
-      prev.some((t) => t.absolutePath === meta.absolutePath) ? prev : [...prev, meta]
-    )
+    setTabs((prev) => {
+      const next = prev.some((t) => t.absolutePath === meta.absolutePath) ? prev : [...prev, meta]
+      void window.api.setState({ openTabs: next.map(t => t.absolutePath) })
+      return next
+    })
     try {
       const res = await window.api.readFile(meta.absolutePath)
       const d = { content: res.content, raw: res.raw, baseDir: res.baseDir, title: res.title }
@@ -720,6 +722,7 @@ function App(): React.JSX.Element {
       const idx = tabs.findIndex((t) => t.absolutePath === abs)
       const next = tabs.filter((t) => t.absolutePath !== abs)
       setTabs(next)
+      void window.api.setState({ openTabs: next.map(t => t.absolutePath) })
       if (currentRef.current?.absolutePath === abs) {
         const neighbor = next[idx] ?? next[idx - 1] ?? null
         setEditing(false)
@@ -760,7 +763,8 @@ function App(): React.JSX.Element {
         aiChats,
         favorites,
         hidden,
-        recentFolders: recentFoldersRef.current
+        recentFolders: recentFoldersRef.current,
+        openTabs: tabs.map(t => t.absolutePath)
       }
       for (const p of paths) s = purgeState(s, p)
       positionsRef.current = s.positions
@@ -948,6 +952,7 @@ function App(): React.JSX.Element {
       setHidden(st.hidden ?? [])
       recentFoldersRef.current = st.recentFolders ?? []
       setRecentFolders(recentFoldersRef.current)
+      const persistedOpenTabs = st.openTabs ?? []
       const pending = await window.api.getPendingOpenPath().catch(() => null)
       if (pending) {
         await openPathAsLibrary(pending)
@@ -960,7 +965,23 @@ function App(): React.JSX.Element {
           filesRef.current = list
           await loadNotesFor(st.lastFolder)
           void buildLibraryIndex(st.lastFolder)
-          if (st.lastFile && list.some((f) => f.absolutePath === st.lastFile)) {
+          // Restore persisted open tabs (filter to files that still exist in this folder)
+          if (persistedOpenTabs.length > 0) {
+            const restored = persistedOpenTabs
+              .map(p => list.find(f => f.absolutePath === p))
+              .filter(Boolean) as MarkdownFileMeta[]
+            if (restored.length > 0) {
+              setTabs(restored)
+              if (st.lastFile) {
+                const last = restored.find(t => t.absolutePath === st.lastFile) || restored[0]
+                void doOpen(last)
+              } else {
+                void doOpen(restored[0])
+              }
+            } else if (st.lastFile && list.some((f) => f.absolutePath === st.lastFile)) {
+              void doOpen(list.find((f) => f.absolutePath === st.lastFile)!)
+            }
+          } else if (st.lastFile && list.some((f) => f.absolutePath === st.lastFile)) {
             void doOpen(list.find((f) => f.absolutePath === st.lastFile)!)
           }
         } catch {
@@ -1040,6 +1061,7 @@ function App(): React.JSX.Element {
       setCurrent(null)
       setDoc(null)
       setTabs([])
+      void window.api.setState({ openTabs: [] })
       docCacheRef.current = {}
       setLibQuery('')
       indexRef.current = null
@@ -1303,11 +1325,18 @@ function App(): React.JSX.Element {
     setExportOpen(false)
     const cur = currentRef.current
     if (!cur || !doc) return
+    const t = titleFor(cur)
     try {
-      const html = await renderBodyHtml(doc.content, settings.theme)
-      await window.api.exportDocx({ defaultName: titleFor(cur) + '.docx', html })
+      // Save a standalone HTML document with a .doc extension: Word opens this directly as an
+      // editable document. Native binary .docx generation is tracked as a follow-up.
+      const content = await renderDocHtml(doc.content, t, settings.theme)
+      await window.api.exportSave({
+        defaultName: t + '.doc',
+        content,
+        filters: [{ name: 'Word document', extensions: ['doc'] }]
+      })
     } catch {
-      setNotice('Couldn’t export this document to Word.')
+      setNotice('Couldn’t export this document for Word.')
     }
   }, [doc, titleFor, settings.theme])
 
@@ -1570,7 +1599,7 @@ function App(): React.JSX.Element {
                       Export HTML
                     </button>
                     <button type="button" onClick={() => void exportDocx()}>
-                      Export Word (.docx)
+                      Export for Word (.doc)
                     </button>
                     <button type="button" onClick={exportNotes}>
                       Export highlights (.md)

@@ -1417,6 +1417,17 @@ mark.find.cur { background: var(--accent); color: white; }
 }
 .markdown-body .wiki-link:hover { background: var(--accent-soft); }
 .markdown-body .wiki-missing { color: var(--danger); background: color-mix(in oklch, var(--danger) 12%, transparent); }
+
+.markdown-body .wiki-embed {
+  color: var(--accent-ink);
+  background: color-mix(in oklch, var(--accent-soft) 30%, transparent);
+  padding: 1px 6px; border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9em;
+  border: 1px dashed var(--accent);
+  cursor: pointer;
+}
+.markdown-body .wiki-embed:hover { background: var(--accent-soft); }
 .markdown-body .mermaid,
 .markdown-body .mermaid-export,
 .markdown-body .chart-block,

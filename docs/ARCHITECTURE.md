@@ -1,58 +1,61 @@
 # Architecture
 
-MD Reader is an Electron app with three isolated layers - **main**, **preload**, and **renderer** -
-plus a set of pure, unit-tested libraries that hold the interesting logic. This document explains
-how the pieces fit together.
+MD Reader v2+ is a **Tauri** app. The renderer is a sandboxed React 19 web app that talks to a Rust
+backend exclusively through a thin `window.api` shim (`src/renderer/src/lib/tauri-api.ts` using
+`@tauri-apps/api`). This keeps the UI byte-for-byte compatible with the previous Electron
+reference build.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Renderer (sandboxed, no Node)         src/renderer/src                │
+│ Renderer (sandboxed webview)      src/renderer/src                    │
 │   React 19 UI · App.tsx · components/ · lib/ (pure logic)             │
 │        │  calls window.api.*  (typed, audited surface only)           │
 └────────┼──────────────────────────────────────────────────────────────┘
-         │  contextBridge
+         │  @tauri-apps/api (invoke + listen)
 ┌────────┼──────────────────────────────────────────────────────────────┐
-│ Preload  src/preload/index.ts                                         │
-│   Exposes a fixed window.api over ipcRenderer.invoke / on             │
-└────────┼──────────────────────────────────────────────────────────────┘
-         │  IPC (ipcMain.handle)
-┌────────┼──────────────────────────────────────────────────────────────┐
-│ Main (full Node + OS)   src/main                                      │
-│   ipc.ts (FS, watch, vault, trash)  ai.ts (providers)  store.ts       │
-│   sidecar.ts  index.ts (windows, mdimg:// protocol)  safe-path.ts     │
+│ Tauri Rust backend (src-tauri)                                        │
+│   lib.rs (setup, plugins, mdimg:// protocol, invoke_handler)          │
+│   commands.rs (file/vault/AI/export impls)  state.rs  config.rs       │
+│   ai.rs (keyring + streaming)  paths.rs (confinement)  sidecar.rs     │
+│   + notify for FS watching, trash crate, reqwest, etc.                │
 └───────────────────────────────────────────────────────────────────────┘
 ```
+
+The legacy Electron code (`src/main`, `src/preload`, `electron-vite`) is retained for reference
+and comparison but is no longer the primary target.
 
 Shared TypeScript types live in `src/shared/` and are imported by all layers via the `@shared`
 alias.
 
-## Main process (`src/main`)
+## Tauri Rust backend (`src-tauri`)
 
-The only layer with Node and OS access. Responsibilities:
+The privileged layer (Rust + Tauri 2 plugins). Responsibilities:
 
-- **`index.ts`** - creates the `BrowserWindow` (with `contextIsolation`, `nodeIntegration: false`,
-  the preload script), registers the custom **`mdimg://`** protocol for serving local images
-  (root-confined + realpath-checked), restores window bounds, and handles file-association /
-  single-instance open paths.
-- **`ipc.ts`** - the bulk of privileged behavior: walking a folder into a Markdown file list,
-  reading/writing files, front-matter parsing (`gray-matter`), the managed **vault** + folder
-  creation + import, `chokidar` file watching (debounced change events), `shell.trashItem`
-  deletes, `shell.showItemInFolder`, and the source-code **digest** for AI README generation
-  (with secret-skipping + redaction). Every path is guarded by `isInsideRoot`.
-- **`safe-path.ts`** - pure `isInside(root, path)` confinement check and `safeSeg(name)` filename
-  sanitizer (no Electron deps, so they're unit-tested directly).
-- **`ai.ts`** - the AI provider integration (see _AI provider boundary_ below).
-- **`store.ts`** - JSON config persistence in the app's `userData` dir (window bounds, last folder,
-  recent folders, encrypted AI key blobs). **`sidecar.ts`** - per-folder `.mdreader/data.json`
-  holding positions/bookmarks/annotations so notes travel with the folder.
+- **`lib.rs`** - app setup, single-instance handling, custom `mdimg://` protocol (root-confined +
+  symlink-safe canonicalize checks), plugin registration (dialog, opener, window-state), and the
+  full `invoke_handler` list.
+- **`commands.rs`** - the bulk of the API surface: list/read/write files, vault + folder ops,
+  import, trash (via `trash` crate), settings/state/sidecar persistence, shell actions, AI
+  commands, and export stubs (renderer does most HTML/DOCX prep). All paths are guarded by
+  `is_inside` / `is_inside_root`.
+- **`paths.rs`** - pure `normalize`, `is_inside`, and `safe_seg` (unit-tested confinement + name
+  sanitization).
+- **`ai.rs`** - multi-provider AI (OpenAI/Anthropic/Ollama) with keyring storage, SSRF host
+  pinning, streaming via reqwest + SSE parsing, cancellation, and usage/cost reporting.
+- **`config.rs`** + **`sidecar.rs`** - JSON config in the OS app config dir + per-library
+  `.mdreader/data.json` for positions/bookmarks/annotations.
+- **`state.rs`** - in-memory authorized roots + current library root.
+- **`protocol.rs`** + **`digest.rs`** + **`frontmatter.rs`** - supporting helpers.
+- File watching uses the `notify` + `notify-debouncer-full` crates (emits `library:changed`).
 
-## Preload bridge (`src/preload/index.ts`)
+The old Electron `src/main/*` and `src/preload` are legacy reference only.
 
-A thin, security-critical shim. It uses `contextBridge.exposeInMainWorld('api', …)` to publish a
-**fixed, typed `window.api`** whose methods map to `ipcRenderer.invoke(channel, …)` (request/reply)
-or `ipcRenderer.on(channel, …)` (events: file-changed, AI stream chunks, open-path). The renderer
-can only reach the main process through these declared methods - there is no general IPC access.
-The shape is typed by `MdReaderApi` in `src/shared/types.ts`.
+## Renderer bridge (Tauri)
+
+In the Tauri build there is no classic preload. Instead `src/renderer/src/main.tsx` conditionally
+loads `src/renderer/src/lib/tauri-api.ts` (only when `__TAURI__` globals are present). That module
+implements the exact same `MdReaderApi` interface by mapping every call to `invoke(...)` or
+`listen(...)` from `@tauri-apps/api`. The renderer never talks to the OS directly.
 
 ## Renderer (`src/renderer/src`)
 

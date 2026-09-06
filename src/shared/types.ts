@@ -185,6 +185,8 @@ export interface PersistedState {
   hidden: string[]
   /** Recently opened library root folders, most-recent first - for quick switching back. */
   recentFolders: string[]
+  /** Absolute paths of currently open document tabs (for persistence across restarts). */
+  openTabs: string[]
 }
 
 /** Per-file notes stored in the library's .mdreader/data.json sidecar so they travel with the folder. */
@@ -237,7 +239,8 @@ export const DEFAULT_STATE: PersistedState = {
   aiChats: {},
   favorites: [],
   hidden: [],
-  recentFolders: []
+  recentFolders: [],
+  openTabs: []
 }
 
 /** The API surface exposed to the renderer via the preload contextBridge. */

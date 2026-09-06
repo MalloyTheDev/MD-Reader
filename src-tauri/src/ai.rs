@@ -20,6 +20,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::Notify;
 
@@ -182,8 +183,21 @@ pub fn resolve_base_url(provider: &str, given: &str) -> String {
 fn http_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none()) // never auto-follow: could leak the key cross-host
+        .connect_timeout(Duration::from_secs(30)) // bound a black-hole connect; safe for streaming (no total timeout)
         .build()
         .map_err(|e| e.to_string())
+}
+
+// Drain complete '\n'-terminated lines from a raw byte buffer, decoding each as UTF-8 lossily.
+// Incomplete trailing bytes (a multi-byte char split across network chunks) stay buffered until the
+// next chunk completes them, so streamed non-ASCII text is not corrupted at chunk boundaries.
+fn drain_lines(buf: &mut Vec<u8>) -> Vec<String> {
+    let mut lines = Vec::new();
+    while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
+        let line: Vec<u8> = buf.drain(..=pos).collect();
+        lines.push(String::from_utf8_lossy(&line[..line.len() - 1]).into_owned());
+    }
+    lines
 }
 
 // ── Errors (mirror of friendlyError) ────────────────────────────────────────
@@ -354,7 +368,7 @@ async fn run_openai(app: &AppHandle, req: &AiRequest, key: &str, runs: &AiRuns) 
 
     let (notify, cancelled) = runs.register(&req.run_id);
     let mut stream = Box::pin(resp.bytes_stream());
-    let mut buffer = String::new();
+    let mut buffer: Vec<u8> = Vec::new();
     let mut full = String::new();
     let mut usage_raw: Option<Value> = None;
 
@@ -368,10 +382,9 @@ async fn run_openai(app: &AppHandle, req: &AiRequest, key: &str, runs: &AiRuns) 
             item = stream.next() => {
                 let Some(item) = item else { break };
                 let bytes = item.map_err(|e| friendly_reqwest(&e))?;
-                buffer.push_str(&String::from_utf8_lossy(&bytes));
-                while let Some(nl) = buffer.find('\n') {
-                    let line: String = buffer[..nl].trim().to_string();
-                    buffer.drain(..=nl);
+                buffer.extend_from_slice(&bytes);
+                for line in drain_lines(&mut buffer) {
+                    let line = line.trim();
                     let Some(data) = line.strip_prefix("data:") else { continue };
                     let data = data.trim();
                     if data == "[DONE]" { continue; }
@@ -448,7 +461,7 @@ async fn run_anthropic(app: &AppHandle, req: &AiRequest, key: &str, runs: &AiRun
 
     let (notify, cancelled) = runs.register(&req.run_id);
     let mut stream = Box::pin(resp.bytes_stream());
-    let mut buffer = String::new();
+    let mut buffer: Vec<u8> = Vec::new();
     let mut full = String::new();
     let mut in_tok = 0.0f64;
     let mut cached = 0.0f64;
@@ -464,10 +477,9 @@ async fn run_anthropic(app: &AppHandle, req: &AiRequest, key: &str, runs: &AiRun
             item = stream.next() => {
                 let Some(item) = item else { break };
                 let bytes = item.map_err(|e| friendly_reqwest(&e))?;
-                buffer.push_str(&String::from_utf8_lossy(&bytes));
-                while let Some(nl) = buffer.find('\n') {
-                    let line: String = buffer[..nl].trim().to_string();
-                    buffer.drain(..=nl);
+                buffer.extend_from_slice(&bytes);
+                for line in drain_lines(&mut buffer) {
+                    let line = line.trim();
                     let Some(data) = line.strip_prefix("data:") else { continue };
                     let data = data.trim();
                     if data.is_empty() { continue; }
@@ -490,6 +502,15 @@ async fn run_anthropic(app: &AppHandle, req: &AiRequest, key: &str, runs: &AiRun
                                 if let Some(o) = v["usage"]["output_tokens"].as_f64() {
                                     out_tok = o;
                                 }
+                            }
+                            Some("error") => {
+                                // Anthropic can emit an error mid-stream; surface it instead of
+                                // ending and reporting the partial text as a completed answer.
+                                let msg = v["error"]["message"]
+                                    .as_str()
+                                    .unwrap_or("The AI provider reported an error.")
+                                    .to_string();
+                                return Err(msg);
                             }
                             _ => {}
                         }
@@ -590,7 +611,8 @@ pub fn parse_anthropic_models(json: &Value) -> Vec<String> {
 
 pub async fn list_models(provider: &str, base_url: Option<&str>, refresh: bool) -> Vec<String> {
     if provider == "ollama" {
-        let root = resolve_base_url("ollama", base_url.unwrap_or("")).replace("/v1", "");
+        let base = resolve_base_url("ollama", base_url.unwrap_or(""));
+        let root = base.strip_suffix("/v1").unwrap_or(&base);
         let Ok(client) = http_client() else { return vec![] };
         match client.get(format!("{root}/api/tags")).send().await {
             Ok(resp) if resp.status().is_success() => {

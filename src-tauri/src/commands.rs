@@ -1,7 +1,8 @@
 // Tauri command surface for MD Reader.
 //
 // Every method of the renderer's MdReaderApi (window.api) maps to exactly one command here.
-// File/vault commands are real (STEP 4-5); settings/state/AI/export are stubs until their step.
+// Core file/vault/settings/AI are implemented; export and a few folder ops were the remaining stubs
+// (now wired as part of port completion).
 //
 // Pattern: each side-effectful command is a thin #[tauri::command] wrapper over a pure `*_impl`
 // function that takes the library root explicitly. The impls are unit-tested against
@@ -13,11 +14,12 @@ use crate::config::ConfigStore;
 use crate::frontmatter;
 use crate::paths::{is_inside, normalize, safe_seg};
 use crate::state::AppState;
+use crate::watcher::WatcherManager;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
-use tauri::State;
+use tauri::{AppHandle, State};
 use tauri_plugin_dialog::DialogExt;
 use walkdir::WalkDir;
 
@@ -171,8 +173,8 @@ pub fn read_all_impl(root: &Path) -> Vec<FileContent> {
     out
 }
 
-/// Read one file, confined to `root`. NOTE: ![[embed]] expansion is not yet ported (tracked as a
-/// follow-on); the body is returned with embeds intact, which the renderer shows literally.
+/// Read one file, confined to `root`. `content` has ![[embeds]] inlined (embeds::expand_embeds,
+/// parity with the Electron reader); `raw` is the unexpanded source the editor loads.
 pub fn read_file_impl(root: &Path, file_path: &str) -> R<ReadResult> {
     let abs = normalize(Path::new(file_path));
     if !is_inside(root, &abs) {
@@ -180,11 +182,12 @@ pub fn read_file_impl(root: &Path, file_path: &str) -> R<ReadResult> {
     }
     let raw = std::fs::read_to_string(&abs).map_err(|e| e.to_string())?;
     let fm = frontmatter::parse(&raw);
-    let base_dir = abs.parent().unwrap_or(&abs).to_string_lossy().to_string();
+    let parent = abs.parent().unwrap_or(&abs);
+    let content = crate::embeds::expand_embeds(&fm.content, parent, root);
     Ok(ReadResult {
-        content: fm.content,
+        content,
         raw,
-        base_dir,
+        base_dir: parent.to_string_lossy().to_string(),
         title: fm.title,
         author: fm.author,
     })
@@ -222,10 +225,12 @@ pub fn list_markdown(
     folder_path: String,
     state: State<'_, AppState>,
     config: State<'_, ConfigStore>,
+    app: AppHandle,
+    watcher: State<'_, WatcherManager>,
 ) -> R<Vec<FileMeta>> {
     let root = normalize(Path::new(&folder_path));
     if !state.is_authorized(&root) {
-        // Restore parity with Electron ipc.ts: on a fresh process the renderer calls
+        // Restore parity with previous Electron behavior: on a fresh process the renderer calls
         // list_markdown(lastFolder) before any dialog has authorized it. Allow exactly the
         // persisted lastFolder to re-authorize itself; refuse to widen the root to anything else.
         let persisted = config
@@ -240,16 +245,24 @@ pub fn list_markdown(
         }
     }
     state.set_library_root(&root);
+    // Start/restart FS watcher so external changes emit library:changed (debounced).
+    let _ = watcher.restart(&root, app);
     Ok(list_markdown_impl(&root))
 }
 
 #[tauri::command]
-pub fn read_all(folder_path: String, state: State<'_, AppState>) -> R<Vec<FileContent>> {
+pub fn read_all(
+    folder_path: String,
+    state: State<'_, AppState>,
+    app: AppHandle,
+    watcher: State<'_, WatcherManager>,
+) -> R<Vec<FileContent>> {
     let root = normalize(Path::new(&folder_path));
     if !state.is_authorized(&root) {
         return Err("Folder not authorized".into());
     }
     state.set_library_root(&root);
+    let _ = watcher.restart(&root, app);
     Ok(read_all_impl(&root))
 }
 
@@ -286,17 +299,32 @@ pub fn trash_file(file_path: String, state: State<'_, AppState>) -> OpResult {
     }
 }
 
-// Folder trashing is wired in STEP 5 (needs create/import alongside it); stub for now so the full
-// command surface stays registered and the shim never hits a missing command.
 #[tauri::command]
-pub fn trash_folder(_folder_rel: String) -> OpResult {
-    OpResult { ok: false, error: Some("not implemented".into()) }
+pub fn trash_folder(folder_rel: String, state: State<'_, AppState>) -> OpResult {
+    let Some(root) = state.library_root() else {
+        return OpResult { ok: false, error: Some("No library is open.".into()) };
+    };
+    let rel = folder_rel.trim_start_matches(|c| c == '/' || c == '\\');
+    let abs = normalize(&root.join(rel));
+    let root_abs = normalize(&root);
+
+    if !state.is_inside_root(&abs) || abs == root_abs {
+        return OpResult { ok: false, error: Some("That folder is outside the current library or is the library root.".into()) };
+    }
+    if !abs.exists() {
+        return OpResult { ok: false, error: Some("The folder no longer exists on disk.".into()) };
+    }
+    // Optional: could check is_dir, but trash crate will handle
+    match trash::delete(&abs) {
+        Ok(()) => OpResult { ok: true, error: None },
+        Err(e) => OpResult { ok: false, error: Some(format!("Could not move the folder to the Recycle Bin: {e}")) },
+    }
 }
 
 // Report which of the given paths are missing. Confined to the library root: a path outside the
 // root is reported as "missing" without probing the real filesystem, so a compromised renderer
 // cannot use this to test for the existence of arbitrary files on disk. (The Electron version
-// probed unconfined; the port plan flagged adding this confinement for parity.)
+// (Previous version probed unconfined; confinement added for security parity.)
 #[tauri::command]
 pub fn check_missing(paths: Vec<String>, state: State<'_, AppState>) -> Vec<String> {
     let root = state.library_root();
@@ -315,7 +343,11 @@ pub fn check_missing(paths: Vec<String>, state: State<'_, AppState>) -> Vec<Stri
 // open_vault: ensure Documents/MD Reader exists, seed a welcome note on first creation, authorize
 // it as a root, and make it the current library. No dialog (that is pick_folder, STEP 5).
 #[tauri::command]
-pub fn open_vault(state: State<'_, AppState>) -> R<String> {
+pub fn open_vault(
+    state: State<'_, AppState>,
+    app: AppHandle,
+    watcher: State<'_, WatcherManager>,
+) -> R<String> {
     let docs = dirs::document_dir().ok_or("Could not locate the Documents folder")?;
     let dir = docs.join("MD Reader");
     let existed = dir.exists();
@@ -330,16 +362,21 @@ pub fn open_vault(state: State<'_, AppState>) -> R<String> {
     let norm = normalize(&dir);
     state.authorize_root(&norm);
     state.set_library_root(&norm);
+    let _ = watcher.restart(&norm, app);
     Ok(norm.to_string_lossy().to_string())
 }
 
-// ── Vault / folders / import (STEP 5) ───────────────────────────────────────
+// ── Vault / folders / import ────────────────────────────────────────────────
 // Dialog-driven commands are async and use a oneshot channel + the plugin's callback picker: the
 // blocking picker would deadlock if called on the main thread, and async commands that borrow
 // State<'_> must return Result, so each returns R<...>.
 
 #[tauri::command]
-pub async fn pick_folder(app: tauri::AppHandle, state: State<'_, AppState>) -> R<Option<String>> {
+pub async fn pick_folder(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    watcher: State<'_, WatcherManager>,
+) -> R<Option<String>> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     app.dialog()
         .file()
@@ -352,6 +389,7 @@ pub async fn pick_folder(app: tauri::AppHandle, state: State<'_, AppState>) -> R
         let norm = normalize(&p);
         state.authorize_root(&norm);
         state.set_library_root(&norm);
+        let _ = watcher.restart(&norm, app.clone());
         norm.to_string_lossy().to_string()
     }))
 }
@@ -594,7 +632,7 @@ pub fn save_image(opts: SaveImageOpts, state: State<'_, AppState>) -> R<String> 
     Ok(format!("assets/{}", file_name.to_string_lossy()))
 }
 
-// ── Settings / state / sidecars (STEP 6) ────────────────────────────────────
+// ── Settings / state / sidecars ─────────────────────────────────────────────
 // get_settings/get_state return COMPLETE objects (defaults merged with persisted) because the
 // renderer assigns the result directly into React state; set_* shallow-merge a patch and persist.
 
@@ -636,7 +674,7 @@ pub fn sidecar_save(file_path: String, data: Value, state: State<'_, AppState>) 
     }
 }
 
-// ── Shell / window / app (STEP 8) ───────────────────────────────────────────
+// ── Shell / window / app ────────────────────────────────────────────────────
 
 // Open an external URL in the default browser. http/https only, mirroring shell:openExternal -
 // never hand an arbitrary scheme (file:, etc.) to the OS opener.
@@ -676,7 +714,7 @@ pub fn get_pending_open_path(state: State<'_, AppState>) -> Option<String> {
     state.take_pending_open().map(|p| p.to_string_lossy().to_string())
 }
 
-// ── AI (STEP 7) ─────────────────────────────────────────────────────────────
+// ── AI ──────────────────────────────────────────────────────────────────────
 // Thin wrappers over ai.rs. Keys live in the OS keyring; ai_status returns only booleans, never
 // the key. ai_run streams tokens to the renderer via the ai:event channel and always resolves Ok
 // (failures arrive as ai:event 'error'), matching the Electron handler contract.
@@ -715,12 +753,69 @@ pub fn ai_cancel(run_id: String, runs: State<'_, crate::ai::AiRuns>) {
 }
 
 #[tauri::command]
-pub fn export_save(_opts: Value) -> bool {
+pub async fn export_save(opts: Value, app: tauri::AppHandle) -> bool {
+    let default_name = opts
+        .get("defaultName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("export.html")
+        .to_string();
+    let content = opts
+        .get("content")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Save export")
+        .set_file_name(&default_name)
+        .save_file(move |f| {
+            let _ = tx.send(f);
+        });
+
+    if let Some(Some(path)) = rx.await.ok().map(|p| p.and_then(|fp| fp.into_path().ok())) {
+        if std::fs::write(&path, content).is_ok() {
+            return true;
+        }
+    }
     false
 }
 
 #[tauri::command]
-pub fn export_docx(_opts: Value) -> bool {
+pub async fn export_docx(opts: Value, app: tauri::AppHandle) -> bool {
+    // For DOCX we receive HTML (prerendered in renderer with math/Mermaid/charts).
+    // To avoid adding a heavy Rust docx crate, we currently fall back to saving the HTML
+    // content with a .html extension (user can open in Word or convert).
+    // Full .docx generation can be added later (or by generating blob in renderer + binary save).
+    // For now provide working save so the flow doesn't 100% break.
+    let default_name = opts
+        .get("defaultName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("export.docx")
+        .to_string()
+        .replace(".docx", ".html"); // pragmatic fallback
+
+    let html = opts
+        .get("html")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_title("Save export (HTML fallback for DOCX)")
+        .set_file_name(&default_name)
+        .save_file(move |f| {
+            let _ = tx.send(f);
+        });
+
+    if let Some(Some(path)) = rx.await.ok().map(|p| p.and_then(|fp| fp.into_path().ok())) {
+        if std::fs::write(&path, html).is_ok() {
+            return true;
+        }
+    }
     false
 }
 

@@ -15,7 +15,8 @@ function makeState(): PersistedState {
     aiChats: { '/lib/a.md': [{ role: 'user', text: 'hi' }] },
     favorites: ['/lib/a.md', '/lib/b.md'],
     hidden: ['/lib/a.md'],
-    recentFolders: ['/lib', '/other']
+    recentFolders: ['/lib', '/other'],
+    openTabs: ['/lib/a.md']
   }
 }
 
@@ -30,6 +31,7 @@ describe('purgeState', () => {
     expect('/lib/a.md' in next.aiChats).toBe(false)
     expect(next.favorites).toEqual(['/lib/b.md'])
     expect(next.hidden).toEqual([])
+    expect(next.openTabs).toEqual([])
     // Recent folders are library roots, not files - they must survive a file purge.
     expect(next.recentFolders).toEqual(['/lib', '/other'])
   })

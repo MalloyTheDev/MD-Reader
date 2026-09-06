@@ -57,7 +57,8 @@ fn default_state() -> Value {
         "aiChats": {},
         "favorites": [],
         "hidden": [],
-        "recentFolders": []
+        "recentFolders": [],
+        "openTabs": []
     })
 }
 
@@ -170,7 +171,7 @@ impl ConfigStore {
         data.state.clone()
     }
 
-    // Window bounds persistence is wired in STEP 8 (window-state); kept here so config.json carries
+    // Window bounds persistence is wired via the window-state plugin; kept here so config.json carries
     // the same {settings, state, window} shape store.ts wrote.
     #[allow(dead_code)]
     pub fn get_window(&self) -> Option<Value> {

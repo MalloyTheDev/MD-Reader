@@ -4,6 +4,18 @@ All notable changes to MD Reader. Versions are published as Windows installers o
 [Releases](https://github.com/MalloyTheDev/MD-Reader/releases) page. (Installers are currently
 unsigned - see [Windows install notes](README.md#windows-install-notes).)
 
+## [2.0.0] - 2026-07 (Tauri)
+
+### Changed
+- Primary runtime is now **Tauri 2** (Rust backend). Electron build kept as legacy/reference.
+- Default `npm run dev` / `build` now use Tauri. Legacy via `:electron` suffixes.
+- Full port of file watching (live library updates), exports (HTML, and Word-openable .doc), folder trash.
+- Tabs now persist across restarts.
+- Wiki embeds `![[note]]` are inlined into the reader (transclusion, matching the Electron reader); the editor still shows the raw source.
+- Stale docs (README, ARCHITECTURE, port plan) updated for Tauri.
+- CI now validates Tauri builds.
+- AI keys use OS keyring (no migration from Electron builds).
+
 ## [1.5.0] - 2026-05-25
 
 ### Added

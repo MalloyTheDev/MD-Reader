@@ -20,7 +20,8 @@ export function purgeState(state: PersistedState, path: string): PersistedState 
     annotations: omit(state.annotations),
     aiChats: omit(state.aiChats),
     favorites: (state.favorites ?? []).filter((p) => p !== path),
-    hidden: (state.hidden ?? []).filter((p) => p !== path)
+    hidden: (state.hidden ?? []).filter((p) => p !== path),
+    openTabs: (state.openTabs ?? []).filter((p) => p !== path)
   }
 }
 

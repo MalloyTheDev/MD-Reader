@@ -105,6 +105,7 @@ function rehypeMathActions() {
 }
 
 // Turn [[Note]] and [[Note|alias]] into links with a wiki: URL.
+// Also handle ![[Embed]] for embeds (turn into special embed node for components).
 function remarkWikiLinks() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (tree: any): void => {
@@ -112,20 +113,30 @@ function remarkWikiLinks() {
     visit(tree, 'text', (node: any, index: number | undefined, parent: any) => {
       if (!parent || index == null || typeof node.value !== 'string' || !node.value.includes('[['))
         return
-      const re = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
+      const re = /(!)?\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const parts: any[] = []
       let last = 0
       let m: RegExpExecArray | null
       while ((m = re.exec(node.value))) {
         if (m.index > last) parts.push({ type: 'text', value: node.value.slice(last, m.index) })
-        const name = m[1].trim()
-        const alias = (m[2] || m[1]).trim()
-        parts.push({
-          type: 'link',
-          url: 'wiki:' + encodeURIComponent(name),
-          children: [{ type: 'text', value: alias }]
-        })
+        const isEmbed = !!m[1]
+        const name = m[2].trim()
+        const alias = (m[3] || m[2]).trim()
+        if (isEmbed) {
+          parts.push({
+            type: 'element',
+            tagName: 'embed',
+            properties: { name: encodeURIComponent(name) },
+            children: [{ type: 'text', value: alias }]
+          })
+        } else {
+          parts.push({
+            type: 'link',
+            url: 'wiki:' + encodeURIComponent(name),
+            children: [{ type: 'text', value: alias }]
+          })
+        }
         last = m.index + m[0].length
       }
       if (parts.length === 0) return
@@ -827,6 +838,24 @@ export function makeComponents(
         <div className="md-table-wrap">
           <table>{props.children}</table>
         </div>
+      )
+    },
+    // Basic support for ![[embed]] - renders as styled reference (click to open).
+    // Full recursive content inlining is a follow-on (was not ported in initial Tauri port).
+    embed(props: any) {
+      const name = props.name ? decodeURIComponent(props.name) : ''
+      const label = props.children?.[0]?.value || name
+      return (
+        <span
+          className="wiki-embed"
+          title={`Embedded note: ${name}`}
+          onClick={(e) => {
+            e.preventDefault()
+            onLinkActivate('wiki:' + name)
+          }}
+        >
+          📎 {label}
+        </span>
       )
     }
   }

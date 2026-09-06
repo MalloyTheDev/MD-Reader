@@ -2,11 +2,13 @@ mod ai;
 mod commands;
 mod config;
 mod digest;
+mod embeds;
 mod frontmatter;
 mod paths;
 mod protocol;
 mod sidecar;
 mod state;
+mod watcher;
 
 use ai::AiRuns;
 use config::ConfigStore;
@@ -14,7 +16,7 @@ use state::AppState;
 use std::path::{Path, PathBuf};
 use tauri::{Emitter, Manager};
 
-const MD_EXTS: [&str; 4] = ["md", "markdown", "mdown", "mkd"];
+const MD_EXTS: [&str; 5] = ["md", "markdown", "mdown", "mkd", "mdx"];
 
 fn is_md(p: &Path) -> bool {
     p.extension()
@@ -56,6 +58,7 @@ pub fn run() {
         .manage(AppState::default())
         .manage(ConfigStore::default())
         .manage(AiRuns::default())
+        .manage(watcher::WatcherManager::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())

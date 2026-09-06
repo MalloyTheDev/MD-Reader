@@ -63,3 +63,43 @@ jobs:
           path: dist/win-unpacked
           retention-days: 7
           if-no-files-found: error
+
+  # Build the Tauri Windows installer (primary target) and validate artifact.
+  build-tauri:
+    runs-on: windows-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Tauri app (unsigned NSIS)
+        # tauri:build runs the beforeBuildCommand (build:tauri-renderer) then tauri build
+        run: npm run tauri:build
+      - name: Validate Tauri NSIS installer
+        shell: pwsh
+        run: |
+          $dir = "src-tauri/target/release/bundle/nsis"
+          $installer = Get-ChildItem -Path $dir -Filter "*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error "Tauri NSIS installer not found in $dir"
+            exit 1
+          }
+          $sizeMB = [math]::Round($installer.Length / 1MB, 1)
+          Write-Host ("OK: {0} ({1} MB)" -f $installer.FullName, $sizeMB)
+          if ($installer.Length -lt 2MB) {
+            Write-Error "Tauri installer suspiciously small"
+            exit 1
+          }
+      - name: Upload Tauri NSIS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: md-reader-tauri-nsis
+          path: src-tauri/target/release/bundle/nsis
+          retention-days: 7
+          if-no-files-found: error

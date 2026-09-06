@@ -1,6 +1,6 @@
 # MD Reader
 
-A fast, private, offline-first **Markdown reader, library, and editor** for Windows - built for real technical, scientific, and study work. Render math, diagrams, and charts beautifully; organize a whole vault of notes; and (optionally) bring your own AI key for a study assistant - all in a secure Electron desktop app.
+A fast, private, offline-first **Markdown reader, library, and editor** for Windows - built for real technical, scientific, and study work. Render math, diagrams, and charts beautifully; organize a whole vault of notes; and (optionally) bring your own AI key for a study assistant - all in a secure Tauri desktop app (Rust backend + React renderer; legacy Electron build kept for reference).
 
 **[🌐 Website](https://malloythedev.github.io/MD-Reader/) · [⬇ Download](https://github.com/MalloyTheDev/MD-Reader/releases/latest) · [📜 Changelog](CHANGELOG.md)**
 
@@ -10,7 +10,7 @@ A fast, private, offline-first **Markdown reader, library, and editor** for Wind
 
 Grab the latest Windows installer from the [**Releases**](https://github.com/MalloyTheDev/MD-Reader/releases) page:
 
-- **[md-reader-1.5.0-setup.exe](https://github.com/MalloyTheDev/MD-Reader/releases/latest)** - current release
+- **MD-Reader-2.0.0-tauri-setup.exe** (or latest) - current Tauri release (recommended)
 
 Then launch **MD Reader** and point it at any folder of `.md` files, or use the built-in vault. See [Windows install notes](#windows-install-notes) below.
 
@@ -24,7 +24,20 @@ yourself. To install:
 2. If SmartScreen appears, click **More info → Run anyway**.
 
 Code signing is fully wired up (see [`SIGNING.md`](SIGNING.md)); the app will ship signed once a
-certificate is in place, which removes the prompt.
+certificate is in place, which removes the prompt. (Current releases are unsigned; see Windows notes.)
+
+## Tauri runtime notes (v2.0+)
+
+MD Reader v2+ is a **Tauri** app:
+
+- Primary shell is Tauri 2 (Rust) + the same React renderer.
+- Run with `npm run tauri:dev` (or `npm run dev` now defaults to Tauri).
+- Build with `npm run tauri:build`.
+- Legacy Electron build is still available via `npm run dev:electron` / `build:electron` for reference or comparison.
+
+**AI key migration**: Keys are now stored in the OS keyring (via the `keyring` crate). They do **not** migrate automatically from older Electron builds (which used `safeStorage`). You will need to re-enter your API keys the first time you use the Tauri version.
+
+The security model reaches parity with the previous Electron version (path confinement, authorized roots, SSRF pinning for AI, etc.).
 
 ## Features
 
@@ -72,7 +85,7 @@ certificate is in place, which removes the prompt.
 - Multi-provider (Anthropic, OpenAI, and OpenAI-compatible / Ollama). The **model list is fetched live** from your provider, so new models show up automatically - with a Refresh button and an offline fallback
 - Study assistant (chat with a doc or the whole library) plus one-click actions: **summarize, flashcards, study guide, quiz, key terms, ELI5, critique, extract action items**, and **text → Mermaid diagram or table**
 - Transform a document: **repurpose** (one-pager · blog · exec summary · slides · lesson), **translate** to any language, **rewrite in a chosen tone**, topic → **course pack**, **README-from-source**, and **auto-organize** (title/tags/links)
-- Resilient by design - automatic retry/backoff, adaptive thinking on Claude 4.x - and API keys are stored **encrypted at rest** via the OS keychain (`safeStorage`), never in plaintext
+- Resilient streaming (cancelable), adaptive thinking on Claude 4.x - and API keys are stored **encrypted at rest** via the OS keyring (keyring crate on Rust side), never in plaintext
 
 ![AI study assistant](docs/screenshots/04-ai-panel.png)
 
@@ -80,28 +93,30 @@ certificate is in place, which removes the prompt.
 
 MD Reader is built defensively:
 
-- `contextIsolation: true`, `nodeIntegration: false` - all filesystem/dialog/shell access lives in the main process behind a typed `window.api` bridge
-- File access is **confined to the open library root** (`isInsideRoot` guard + filename sanitization)
-- Deletes go to the **Recycle Bin**, never silently destroyed
-- Remote images are **blocked by default**; Mermaid renders with `securityLevel: 'strict'` and SVG output is sanitized
-- Charts run **no code** - they parse a static spec only
-- Works fully **offline**; AI features only run when you add your own key
+- All privileged access (FS, dialogs, shell) lives in the Tauri Rust backend behind a typed `window.api` surface (implemented via `@tauri-apps/api` invoke).
+- File access is **confined to the open library root** (lexical + canonicalize checks in Rust, `is_inside_root` guards).
+- Deletes go to the **Recycle Bin** (via the `trash` crate), never silently destroyed.
+- Remote images are **blocked by default**; Mermaid renders with `securityLevel: 'strict'` and SVG output is sanitized.
+- Charts run **no code** - they parse a static spec only.
+- Works fully **offline**; AI features only run when you add your own key (keys stored in OS keyring, never plaintext).
+- Legacy Electron build (if used) had equivalent `contextIsolation` + preload hardening.
 
 ## Build from source
 
-Requires Node.js 18+.
+Requires Node.js 18+ and Rust (for Tauri).
 
 ```bash
 npm install          # install dependencies
-npm run dev          # run in development
+npm run dev          # run in development (Tauri by default)
 npm run typecheck    # TypeScript checks
 npm test             # unit tests (vitest)
-npm run build:win    # build the Windows installer → dist/ (unsigned unless a cert is configured)
+npm run tauri:build  # build the Windows Tauri installer → src-tauri/target/... (unsigned)
+# Legacy Electron: npm run dev:electron ; npm run build:electron
 ```
 
 ## Tech stack
 
-Electron · electron-vite · React 19 · TypeScript · react-markdown (remark/rehype) · KaTeX · Mermaid · MiniSearch · d3-force · electron-builder (NSIS).
+Tauri 2 (Rust backend) · Vite (renderer) · React 19 · TypeScript · react-markdown (remark/rehype) · KaTeX · Mermaid · MiniSearch · d3-force · (Legacy: Electron + electron-vite + electron-builder).
 
 ## License
 

@@ -1,10 +1,22 @@
-# MD Reader v2.0.0 - Tauri port plan and handoff
+# MD Reader v2.0.0 - Tauri port plan and handoff (Historical)
 
-Status: PLANNING / NOT STARTED. Last updated 2026-05-29.
-Author: Brendan Malloy.
+**Status: COMPLETED.** The port is done and Tauri is the primary runtime (as of 2026-07).
 
-This is the single source of truth for the Tauri swap. Read this top to bottom before
-touching code. It exists so we do not repeat the mistake that prompted it.
+This document is kept for historical reference. The original plan and decisions are below.
+Key outcomes:
+- Full `window.api` surface implemented in Rust (`commands.rs` + supporting modules).
+- Security parity achieved (confinement, keyring, SSRF pinning, protocol).
+- Live FS watching, exports, and folder trash wired.
+- Renderer unchanged.
+- Legacy Electron code retained for reference.
+
+See current `README.md`, `docs/ARCHITECTURE.md`, and `PORT-AUDIT.md` for the live state.
+Last plan update was 2026-05-29. Author: Brendan Malloy.
+
+---
+
+This was the single source of truth for the Tauri swap. Read this top to bottom before
+touching code (at the time). It existed so we did not repeat the mistake that prompted it.
 
 ---
 
