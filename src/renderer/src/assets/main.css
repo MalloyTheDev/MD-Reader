@@ -813,10 +813,11 @@ mark.find.cur { background: var(--accent); color: white; }
 
 /* Optional focus ruler overlay */
 .focus-ruler {
-  position: absolute; left: 0; right: 0; height: 28px;
-  margin-top: -14px;
+  position: absolute; left: 0; right: 0;
+  height: var(--ruler-height, 28px);
+  margin-top: calc(var(--ruler-height, 28px) / -2);
   background: linear-gradient(to bottom, transparent, var(--accent-soft) 40%, var(--accent-soft) 60%, transparent);
-  opacity: 0.35;
+  opacity: var(--ruler-strength, 35%);
   pointer-events: none;
   z-index: 1;
 }
@@ -1263,6 +1264,11 @@ mark.find.cur { background: var(--accent); color: white; }
   --page-bg:            var(--bg);
 }
 
+/* Reading font family: the Aa "Font" control sets data-font on <html>. Map it to the read font
+   used by both .reader-content and .markdown-body. Default (serif) keeps --font-read unchanged. */
+:root[data-font="sans"] { --font-read: var(--font-ui); }
+:root[data-font="dyslexic"] { --font-read: "OpenDyslexic", "Comic Sans MS", var(--font-ui); }
+
 .reader-layout {
   flex: 1; display: flex;
   min-height: 0; min-width: 0;
@@ -1306,15 +1312,18 @@ mark.find.cur { background: var(--accent); color: white; }
 .markdown-body {
   font-family: var(--font-read);
   color: var(--ink);
-  line-height: 1.68;
+  /* Consume the reader typography vars set by the Settings effect in App.tsx. Fallbacks keep
+     the export/preview surfaces (which do not set these vars) looking correct. */
+  line-height: var(--reader-line-height, 1.68);
   font-weight: var(--reader-weight, 400);
   letter-spacing: calc(var(--reader-letter-spacing, 0) * 0.5px);
+  text-align: var(--reader-align, left);
 }
 .markdown-body h1 { font-size: 1.85em; font-weight: 600; letter-spacing: -0.02em;  line-height: 1.16; margin: 0.2em 0 0.5em; }
 .markdown-body h2 { font-size: 1.32em; font-weight: 600; letter-spacing: -0.012em; line-height: 1.22; margin: 1.6em 0 0.45em; }
 .markdown-body h3 { font-size: 1.10em; font-weight: 600; letter-spacing: -0.008em; margin: 1.25em 0 0.3em; }
 .markdown-body h4 { font-size: 1.00em; font-weight: 600; margin: 1.0em 0 0.3em; }
-.markdown-body p  { margin: 0.85em 0; }
+.markdown-body p  { margin: calc(0.85em * var(--reader-para-space, 1)) 0; }
 .markdown-body a {
   color: var(--accent-ink); text-decoration: underline;
   text-decoration-color: color-mix(in oklch, var(--accent) 50%, transparent);
